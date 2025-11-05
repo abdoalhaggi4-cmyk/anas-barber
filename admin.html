@@ -1,0 +1,382 @@
+﻿<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>لوحة إدارة | ANAS BARBER</title>
+    <style>
+        body {
+            margin: 0;
+            font-family: "Noto Kufi Arabic","Cairo",sans-serif;
+            background: #0f1115;
+            color: #e7ebf3
+        }
+
+        .wrap {
+            width: min(900px,92vw);
+            margin: 24px auto;
+            display: grid;
+            gap: 16px
+        }
+
+        .card {
+            background: #0e131b;
+            border: 1px solid #2a3241;
+            border-radius: 14px;
+            padding: 16px;
+            display: grid;
+            gap: 12px
+        }
+
+        h2, h3 {
+            margin: 0 0 6px 0
+        }
+
+        label {
+            display: grid;
+            gap: 6px
+        }
+
+        input, select, textarea {
+            background: #0f131b;
+            color: #e7ebf3;
+            border: 1px solid #2a3241;
+            border-radius: 10px;
+            padding: 10px
+        }
+
+        .grid2 {
+            display: grid;
+            gap: 12px;
+            grid-template-columns: repeat(2,minmax(0,1fr))
+        }
+
+        .row {
+            display: flex;
+            gap: 10px;
+            align-items: center
+        }
+
+        .muted {
+            color: #8b93a7;
+            font-size: 13px
+        }
+
+        button {
+            cursor: pointer;
+            border-radius: 10px;
+            border: 1px solid #2a3241;
+            background: #10131a;
+            color: #e7ebf3;
+            padding: 10px 14px
+        }
+
+        .primary {
+            background: linear-gradient(135deg,#d4af37,#f5d76e);
+            color: #0b0d11;
+            border: none
+        }
+
+        .warn {
+            background: #402020;
+            border-color: #773333
+        }
+
+        .ok {
+            color: #9be49b
+        }
+
+        /* شبكة إدارة يوم محدد */
+        .slot-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill,minmax(84px,1fr));
+            gap: 8px;
+            position: relative
+        }
+
+        .slot {
+            border: 1px solid #2a3241;
+            border-radius: 10px;
+            padding: 8px 10px;
+            text-align: center;
+            user-select: none;
+            pointer-events: auto
+        }
+
+            .slot.open {
+                background: #0f131b
+            }
+
+            .slot.closed {
+                background: #3a1f1f;
+                color: #ffb4b4;
+                border-color: #663c3c
+            }
+
+        .legend {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+            font-size: 13px;
+            color: #8b93a7
+        }
+
+            .legend .box {
+                width: 14px;
+                height: 14px;
+                border-radius: 4px;
+                border: 1px solid #2a3241
+            }
+
+        .box.open {
+            background: #0f131b
+        }
+
+        .box.closed {
+            background: #3a1f1f;
+            border-color: #663c3c
+        }
+    </style>
+</head>
+<body>
+    <div class="wrap">
+
+        <div class="card">
+            <h2>حماية بسيطة</h2>
+            <div class="row">
+                <input id="pin" placeholder="أدخل PIN مؤقت" type="password" style="max-width:220px">
+                <button id="setPin" class="primary">حفظ/تحديث PIN</button>
+                <span id="pinNote" class="muted">يحفظ في المتصفح فقط.</span>
+            </div>
+        </div>
+
+        <div class="card">
+            <h2>أوقات العمل الافتراضية</h2>
+            <div class="grid2">
+                <label><span>من</span><input id="defStart" value="14:00" type="time"></label>
+                <label><span>إلى</span><input id="defEnd" value="01:00" type="time"></label>
+            </div>
+            <div class="row">
+                <label class="row"><input id="step30" type="checkbox" checked> <span>فاصل 30 دقيقة</span></label>
+                <label class="row"><input id="step15" type="checkbox"> <span>فاصل 15 دقيقة</span></label>
+            </div>
+        </div>
+
+        <div class="card">
+            <h2>استثناءات حسب يوم الأسبوع</h2>
+            <div class="grid2">
+                <label>
+                    <span>اليوم</span>
+                    <select id="wdDay">
+                        <option value="0">الأحد</option>
+                        <option value="1">الاثنين</option>
+                        <option value="2">الثلاثاء</option>
+                        <option value="3">الأربعاء</option>
+                        <option value="4">الخميس</option>
+                        <option value="5">الجمعة</option>
+                        <option value="6">السبت</option>
+                    </select>
+                </label>
+                <label><span>من</span><input id="wdStart" type="time" value="16:00"></label>
+                <label><span>إلى</span><input id="wdEnd" type="time" value="02:00"></label>
+            </div>
+            <div class="row">
+                <button id="addWd" class="primary">حفظ/تحديث هذا اليوم</button>
+                <button id="clearWd" class="warn">حذف هذا اليوم</button>
+            </div>
+            <div id="wdList" class="muted"></div>
+        </div>
+
+        <div class="card" id="perDayCard">
+            <h2>إدارة أوقات يوم محدد</h2>
+            <div class="row">
+                <label class="row" style="gap:8px">
+                    <span>اختر التاريخ</span>
+                    <input id="dayPick" type="date">
+                </label>
+                <button id="openAll" class="primary">فتح الكل</button>
+                <button id="closeAll" class="warn">قفل الكل</button>
+                <span id="countInfo" class="muted"></span>
+            </div>
+            <div class="legend">
+                <div class="box open"></div><span>متاح</span>
+                <div class="box closed"></div><span>مقفول</span>
+            </div>
+            <div id="slotGrid" class="slot-grid"></div>
+        </div>
+
+        <div class="card">
+            <h2>الأسعار</h2>
+            <div class="grid2">
+                <label><span>قص شعر</span><input id="pHair" type="number" inputmode="decimal" value="25"></label>
+                <label><span>لحية</span><input id="pBeard" type="number" inputmode="decimal" value="15"></label>
+                <label><span>كامل</span><input id="pFull" type="number" inputmode="decimal" value="35"></label>
+                <label><span>صبغة</span><input id="pColor" type="number" inputmode="decimal" value="30"></label>
+                <label><span>أطفال</span><input id="pKids" type="number" inputmode="decimal" value="20"></label>
+                <label><span>عريس عادي</span><input id="pGroomN" type="number" inputmode="decimal" value="150"></label>
+                <label><span>عريس VIP</span><input id="pGroomV" type="number" inputmode="decimal" value="250"></label>
+                <label><span>عريس ذهبية</span><input id="pGroomG" type="number" inputmode="decimal" value="350"></label>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="row">
+                <button id="saveAll" class="primary">حفظ الإعدادات</button>
+                <button id="wipe" class="warn">مسح كل الإعدادات</button>
+                <span id="state" class="ok"></span>
+            </div>
+            <div class="muted">تُحفظ الإعدادات في المتصفح عبر <code>localStorage</code> وتقرأها صفحة الحجز تلقائيًا.</div>
+        </div>
+
+    </div>
+
+    <script>
+        const KEY = "anas_config_v1";
+        const PINKEY = "anas_admin_pin";
+        const $ = s => document.querySelector(s);
+        const state = m => $("#state").textContent = m;
+
+        function load() {
+            const raw = localStorage.getItem(KEY);
+            return raw ? JSON.parse(raw) : {
+                pin: "",
+                step: 30,
+                defaultHours: { start: "14:00", end: "01:00" },
+                byWeekday: {},
+                closed: {}, // {"YYYY-MM-DD":["14:00","14:30",...]}
+                prices: {
+                    haircut: 25, beard: 15, full: 35, color: 30, kids: 20,
+                    groom_normal: 150, groom_vip: 250, groom_gold: 350
+                }
+            };
+        }
+        function save(cfg) { localStorage.setItem(KEY, JSON.stringify(cfg)); state("تم الحفظ"); renderLists(); }
+
+        const cfg = load();
+
+        // init UI
+        $("#pin").value = localStorage.getItem(PINKEY) || "";
+        $("#defStart").value = cfg.defaultHours.start; $("#defEnd").value = cfg.defaultHours.end;
+        $("#step30").checked = cfg.step === 30; $("#step15").checked = cfg.step === 15;
+
+        const ps = cfg.prices;
+        $("#pHair").value = ps.haircut; $("#pBeard").value = ps.beard; $("#pFull").value = ps.full;
+        $("#pColor").value = ps.color; $("#pKids").value = ps.kids;
+        $("#pGroomN").value = ps.groom_normal; $("#pGroomV").value = ps.groom_vip; $("#pGroomG").value = ps.groom_gold;
+
+        function renderLists() {
+            const names = ["الأحد", "الاثنين", "الثلاثاء", "الأربعاء", "الخميس", "الجمعة", "السبت"];
+            $("#wdList").innerHTML = Object.keys(cfg.byWeekday).length
+                ? Object.entries(cfg.byWeekday).map(([d, v]) => `• ${names[+d]}: ${v.start}-${v.end}`).join("<br>")
+                : "لا استثناءات أسبوعية";
+        }
+        renderLists();
+
+        // PIN
+        $("#setPin").onclick = () => { localStorage.setItem(PINKEY, $("#pin").value || ""); state("تم تحديث PIN"); };
+
+        // step toggles
+        function applyStep(step) {
+            cfg.step = step;
+            $("#step15").checked = step === 15;
+            $("#step30").checked = step === 30;
+            save(cfg);
+            refreshCurrentDay();
+        }
+        $("#step15").addEventListener("change", e => { if (e.target.checked) applyStep(15); });
+        $("#step30").addEventListener("change", e => { if (e.target.checked) applyStep(30); });
+
+        // time helpers
+        const pad = n => String(n).padStart(2, "0");
+        const toMin = t => { const [h, m] = t.split(":").map(Number); return h * 60 + m; };
+        const fromMin = m => { m = (m + 1440) % 1440; return `${pad(Math.floor(m / 60))}:${pad(m % 60)}`; };
+        function generateSlots(start, end, step) {
+            let s = toMin(start), e = toMin(end);
+            const span = (e > s) ? (e - s) : (1440 - s) + e;
+            const steps = Math.floor(span / step);
+            const out = [];
+            for (let i = 0; i <= steps; i++) out.push(fromMin(s + i * step));
+            return out;
+        }
+        function scheduleFor(dateStr) {
+            const wd = new Date(dateStr).getDay();
+            const w = cfg.byWeekday[wd];
+            return { start: (w?.start || cfg.defaultHours.start), end: (w?.end || cfg.defaultHours.end), step: cfg.step };
+        }
+
+        // per-day management
+        const dayPick = $("#dayPick"), slotGrid = $("#slotGrid"), countInfo = $("#countInfo");
+
+        function renderDay(dateStr) {
+            if (!dateStr) { slotGrid.innerHTML = ""; countInfo.textContent = ""; return; }
+            const sch = scheduleFor(dateStr);
+            const slots = generateSlots(sch.start, sch.end, sch.step);
+            const closed = new Set(cfg.closed[dateStr] || []);
+            slotGrid.innerHTML = "";
+            let closedCount = 0;
+
+            slots.forEach(t => {
+                const div = document.createElement("div");
+                const isClosed = closed.has(t);
+                if (isClosed) closedCount++;
+                div.className = "slot " + (isClosed ? "closed" : "open");
+                div.textContent = t;
+                div.setAttribute("data-t", t); // مهم للتفويض
+                slotGrid.appendChild(div);
+            });
+
+            countInfo.textContent = `المتاح: ${slots.length - closedCount} | المقفول: ${closedCount}`;
+        }
+
+        // تفويض النقر للخانات
+        slotGrid.addEventListener("click", (e) => {
+            const div = e.target.closest(".slot");
+            if (!div) return;
+            const t = div.dataset.t;
+            const d = dayPick.value;
+            const arr = cfg.closed[d] || (cfg.closed[d] = []);
+            const i = arr.indexOf(t);
+            if (i === -1) arr.push(t); else arr.splice(i, 1);
+            save(cfg);
+            renderDay(d);
+        });
+
+        $("#openAll").onclick = () => { const d = dayPick.value; if (!d) return; cfg.closed[d] = []; save(cfg); renderDay(d); };
+        $("#closeAll").onclick = () => { const d = dayPick.value; if (!d) return; const { start, end, step } = scheduleFor(d); cfg.closed[d] = generateSlots(start, end, step); save(cfg); renderDay(d); };
+
+        // weekday exceptions
+        $("#addWd").onclick = () => { const d = $("#wdDay").value; cfg.byWeekday[d] = { start: $("#wdStart").value, end: $("#wdEnd").value }; save(cfg); refreshCurrentDay(); };
+        $("#clearWd").onclick = () => { const d = $("#wdDay").value; delete cfg.byWeekday[d]; save(cfg); refreshCurrentDay(); };
+
+        // save all
+        $("#saveAll").onclick = () => {
+            cfg.defaultHours = { start: $("#defStart").value, end: $("#defEnd").value };
+            cfg.prices = {
+                haircut: +$("#pHair").value, beard: +$("#pBeard").value, full: +$("#pFull").value,
+                color: +$("#pColor").value, kids: +$("#pKids").value,
+                groom_normal: +$("#pGroomN").value, groom_vip: +$("#pGroomV").value, groom_gold: +$("#pGroomG").value
+            };
+            save(cfg);
+            refreshCurrentDay();
+        };
+
+        // wipe
+        $("#wipe").onclick = () => { if (confirm("مسح كل الإعدادات؟")) { localStorage.removeItem(KEY); localStorage.removeItem(PINKEY); location.reload(); } };
+
+        // refresh day on field changes
+        function refreshCurrentDay() { if (dayPick && dayPick.value) renderDay(dayPick.value); }
+        $("#defStart").addEventListener("change", refreshCurrentDay);
+        $("#defEnd").addEventListener("change", refreshCurrentDay);
+        $("#wdStart").addEventListener("change", refreshCurrentDay);
+        $("#wdEnd").addEventListener("change", refreshCurrentDay);
+        dayPick.addEventListener("change", () => renderDay(dayPick.value));
+
+        // init
+        (function initDay() {
+            const today = new Date().toISOString().slice(0, 10);
+            dayPick.value = today; renderDay(today);
+        })();
+    </script>
+</body>
+</html>
+```0
