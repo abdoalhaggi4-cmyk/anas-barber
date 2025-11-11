@@ -1,15 +1,15 @@
 ﻿<!doctype html>
 <html lang="ar" dir="rtl">
 <head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
     <title>ANAS BARBER • الحجز الإلكتروني</title>
     <style>
         :root {
             --bg: #0f1115;
             --text: #e7ebf3;
             --brand: #d4af37;
-            --brand-2: #f5d76e;
+            --brand2: #f5d76e;
             --stroke: #242a35;
             --muted: #8b93a7
         }
@@ -20,15 +20,9 @@
 
         body {
             margin: 0;
-            font-family: "Noto Kufi Arabic","Cairo",system-ui,sans-serif;
+            font-family: "Noto Kufi Arabic","Cairo",sans-serif;
             background: linear-gradient(180deg,var(--bg),#0b0d11 55%);
             color: var(--text)
-        }
-
-        img {
-            max-width: 100%;
-            height: auto;
-            display: block
         }
 
         .container {
@@ -36,12 +30,11 @@
             margin-inline: auto
         }
 
-        /* Header */
         header {
             position: sticky;
             top: 0;
-            backdrop-filter: blur(10px);
             background: rgba(15,17,21,.65);
+            backdrop-filter: blur(10px);
             border-bottom: 1px solid var(--stroke);
             z-index: 10
         }
@@ -75,17 +68,16 @@
         }
 
             .btn.primary {
-                background: linear-gradient(135deg,var(--brand),var(--brand-2));
+                background: linear-gradient(135deg,var(--brand),var(--brand2));
                 color: #0b0d11;
                 border: none
             }
 
-        /* Hero */
         .hero-arch {
             display: grid;
             gap: 24px;
             align-items: center;
-            grid-template-columns: 1fr 1.1fr; /* الصورة يسار */
+            grid-template-columns: 1fr 1.1fr;
             padding-block: 36px
         }
 
@@ -107,57 +99,6 @@
             color: var(--brand)
         }
 
-        .hero-card {
-            position: relative;
-            border-radius: 28px;
-            overflow: visible;
-            width: 100%;
-            max-width: 720px;
-            margin-inline: 0 auto; /* لصق يسار */
-            align-self: flex-start
-        }
-            /* إزالة الإطار والخلفية والظل */
-            .hero-card.no-frame {
-                background: transparent;
-                border: none;
-                box-shadow: none
-            }
-                /* رفع الصورة قليلًا وتثبيتها يسار */
-                .hero-card.no-frame .pop-head {
-                    position: relative;
-                    top: -28px;
-                    left: 0;
-                    transform: none;
-                    width: 100%;
-                    max-width: 560px;
-                    filter: drop-shadow(0 18px 30px rgba(0,0,0,.55));
-                    pointer-events: none
-                }
-
-        /* About */
-        #about-anas {
-            position: relative;
-            width: 100%;
-            overflow: hidden;
-            background: #0e0e0e
-        }
-
-        .about-img {
-            position: relative;
-            width: 100%;
-            height: auto;
-            opacity: 0;
-            transform: translateY(80px);
-            transition: opacity 800ms ease,transform 800ms ease;
-            filter: brightness(1.05) contrast(1.05)
-        }
-
-            .about-img.in {
-                opacity: 1;
-                transform: translateY(0)
-            }
-
-        /* Booking */
         #booking {
             padding-block: 32px
         }
@@ -171,7 +112,8 @@
             border-radius: 14px
         }
 
-            form#bookForm input, form#bookForm select {
+            form#bookForm input,
+            form#bookForm select {
                 width: 100%;
                 padding: 12px;
                 border-radius: 12px;
@@ -192,6 +134,48 @@
             }
         }
 
+        .time-grid {
+            margin-top: 8px;
+            display: grid;
+            grid-template-columns: repeat(auto-fill,minmax(90px,1fr));
+            gap: 8px
+        }
+
+        .time-slot {
+            border-radius: 10px;
+            border: 1px solid var(--stroke);
+            padding: 8px 6px;
+            text-align: center;
+            font-size: 14px;
+            cursor: pointer
+        }
+
+            .time-slot.selected {
+                background: linear-gradient(135deg,var(--brand),var(--brand2));
+                color: #0b0d11;
+                border: none
+            }
+
+            .time-slot.booked {
+                background: #4d1d1d;
+                border: none;
+                color: #ffb4b4;
+                cursor: not-allowed
+            }
+
+        #noTimes {
+            color: var(--muted);
+            text-align: center;
+            margin-top: 10px;
+            display: none
+        }
+
+        #formErrors {
+            color: #ffb4b4;
+            font-size: 14px;
+            display: none
+        }
+
         footer {
             text-align: center;
             color: var(--muted);
@@ -204,40 +188,43 @@
     <header>
         <div class="container nav">
             <div class="brand">
-                <img src="assets/logo.png" alt="ANAS BARBER" style="width:38px;height:38px;border-radius:10px;object-fit:cover">
+                <img src="assets/logo.png" alt="ANAS BARBER"
+                     style="width:38px;height:38px;border-radius:10px;object-fit:cover">
                 <h1>ANAS BARBER | الحجز الإلكتروني</h1>
             </div>
-            <button class="btn primary" onclick="document.getElementById('booking').scrollIntoView({behavior:'smooth'})">احجز الآن</button>
+            <button class="btn primary"
+                    onclick="document.getElementById('booking').scrollIntoView({behavior:'smooth'})">
+                احجز الآن
+            </button>
         </div>
     </header>
 
-    <!-- HERO: الصورة يسار بدون إطار -->
     <section class="container hero-arch">
-        <div class="hero-card no-frame">
-            <img class="pop-head" src="assets/head.png" alt="ANAS BARBER Head">
+        <div>
+            <h1 class="hero-title">
+                DIFFERENT <span class="accent">BARBER</span><br>EXPERIENCE
+            </h1>
+            <p style="color:#cfd3dc">
+                احجز موعِدك مع ANAS BARBER بتصميم ذهبي وحركة ناعمة.
+            </p>
         </div>
         <div>
-            <h1 class="hero-title">DIFFERENT <span class="accent">BARBER</span><br>EXPERIENCE</h1>
-            <p style="color:#cfd3dc">احجز موعِدك مع ANAS BARBER بتصميم ذهبي وحركة ناعمة.</p>
+            <img src="assets/head.png" alt="ANAS BARBER"
+                 style="max-width:100%;border-radius:20px">
         </div>
     </section>
 
-    <!-- صورة تعريف تتحرك مرة واحدة عند الظهور -->
-    <section id="about-anas">
-        <img src="assets/strip-motion.png" alt="Anas Barber" class="about-img" id="aboutImg">
-    </section>
-
-    <!-- نموذج الحجز -->
     <section id="booking" class="container">
-        <h3>نموذج الحجز (تجريبي)</h3>
-        <p style="color:var(--muted)">اختَر البيانات ثم اضغط إرسال. لن يتم إرسال طلب فعليًا.</p>
+        <h3>نموذج الحجز</h3>
 
         <form id="bookForm" novalidate>
             <div class="grid2">
+                <!-- اسم الحلاق -->
                 <label style="display:grid;gap:6px">
                     <span>اختيار الحلاق</span>
                     <select id="barber" name="barber" required>
                         <option value="anas">أنس</option>
+                        <!-- لو أضفت حلاقين آخرين زِد الخيارات هنا -->
                     </select>
                 </label>
 
@@ -249,141 +236,235 @@
                 <label style="display:grid;gap:6px">
                     <span>رقم الهاتف</span>
                     <input id="phone" name="phone" inputmode="tel" required
-                           pattern="^[0-9+\-\s()]{6,}$" placeholder="+218 xx xxx xxxx">
+                           pattern="^[0-9+\\-\\s()]{6,}$" placeholder="+218 xx xxx xxxx">
                 </label>
 
+                <!-- بند الحلاقة -->
                 <label style="display:grid;gap:6px">
-                    <span>نوع الحلاقة</span>
+                    <span>بند الحلاقة</span>
                     <select id="service" name="service" required>
-                        <option value="haircut">قص شعر</option>
-                        <option value="beard">تخفيف لحية</option>
-                        <option value="full">حلاقة كاملة</option>
-                        <option value="color">صبغة</option>
-                        <option value="kids">قص أطفال</option>
+                        <option value="hair">حلاقة شعر</option>
+                        <option value="face">حلاقة وجه</option>
+                        <option value="hair_face">حلاقة شعر ووجه</option>
+                        <option value="kids">حلاقة أطفال</option>
+                        <option value="keratin">كيرياتين</option>
+                        <option value="protein">بروتين</option>
+                        <option value="botox">بوتكس</option>
+                        <option value="collagen">كولاجين</option>
+                        <option value="skin_normal">تنظيف بشرة عادي</option>
+                        <option value="skin_deep">تنظيف بشرة عميق</option>
+                        <option value="hydrafacial">تنظيف بشرة بجهاز Hydrafacial</option>
+                        <option value="vip_shave">حلاقة VIP</option>
                     </select>
                 </label>
             </div>
 
-            <label for="date">التاريخ</label>
-            <input id="date" type="date">
+            <label style="display:grid;gap:6px;margin-top:6px">
+                <span>التاريخ</span>
+                <input id="date" type="date" required>
+            </label>
 
-            <label for="time">اختيار الساعة</label>
-            <select id="time" name="time">
-                <option value="">اختر الساعة</option>
-            </select>
+            <!-- شبكة الأوقات -->
+            <div style="margin-top:10px">
+                <span>اختيار الساعة</span>
+                <div id="timeGrid" class="time-grid"></div>
+                <p id="noTimes">لا توجد مواعيد متاحة لهذا اليوم 🙁</p>
+                <!-- الوقت الفعلي يُخزن هنا بصيغة 24 ساعة -->
+                <input type="hidden" id="time" name="time">
+            </div>
 
-            <!-- باقة العريس -->
-            <div style="display:grid;gap:8px;margin-top:6px">
+            <!-- بند العرسان -->
+            <div style="display:grid;gap:8px;margin-top:12px">
                 <label style="display:flex;gap:10px;align-items:center">
-                    <input type="checkbox" id="groom" name="groom" style="accent-color:#d4af37;width:18px;height:18px">
-                    <span>إضافة باقة عريس</span>
+                    <input type="checkbox" id="groom" name="groom"
+                           style="accent-color:#d4af37;width:18px;height:18px">
+                    <span>إضافة باقة العرسان</span>
                 </label>
                 <div style="color:var(--muted);font-size:14px">
-                    ملاحظة: حجز باقة العريس يجب أن يكون بعد يومين على الأقل من تاريخ اليوم.
+                    ملاحظة: حجز باقة العرسان يجب أن يكون بعد يومين على الأقل من تاريخ اليوم.
                 </div>
             </div>
 
             <div id="groom-packages" style="display:none;margin-top:10px">
-                <label for="package">اختر نوع الباقة:</label>
-                <select id="package" name="package">
-                    <option value="">اختر الباقة</option>
-                    <option value="normal">💈 باقة عادية</option>
-                    <option value="vip">✨ باقة VIP</option>
-                    <option value="gold">🏆 باقة ذهبية</option>
-                </select>
+                <label style="display:grid;gap:6px">
+                    <span>اختر نوع الباقة</span>
+                    <select id="package" name="package">
+                        <option value="">اختر الباقة</option>
+                        <option value="bronze">باقة برونزية</option>
+                        <option value="silver">باقة فضية</option>
+                        <option value="gold">باقة ذهبية</option>
+                        <option value="vip">باقة VIP</option>
+                    </select>
+                </label>
             </div>
 
-            <div id="formErrors" style="color:#ffb4b4;display:none"></div>
+            <div id="formErrors"></div>
 
-            <div>
-                <button class="btn primary" type="submit" style="padding:12px 18px;border-radius:12px">إرسال الطلب</button>
-            </div>
+            <button class="btn primary" type="submit"
+                    style="margin-top:10px">
+                إرسال الطلب
+            </button>
         </form>
     </section>
 
-    <footer>واجهة تصميمية تجريبية يمكن ربطها لاحقًا بقاعدة بيانات حقيقية.</footer>
+    <footer>© 2025 ANAS BARBER | واجهة حجز مرتبطة بقاعدة بيانات Firebase</footer>
 
-    <script>
-        /* تحريك صورة about مرة واحدة */
-        (function () {
-            const el = document.getElementById('aboutImg');
-            const io = new IntersectionObserver(es => {
-                es.forEach(e => { if (e.isIntersecting) { el.classList.add('in'); io.unobserve(el); } })
-            }, { threshold: .2 });
-            io.observe(el);
-        })();
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+        import { getDatabase, ref, push, set, get } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
 
-        /* إعداد أوقات العمل + توليد خانات كل 30 دقيقة */
-        const STEP_MIN = 30;
-        const defaultHours = { start: "14:00", end: "01:00" };
-        const exceptions = [{ from: "2025-03-01", to: "2025-04-01", start: "16:00", end: "02:00" }]; // مثال رمضان
-        const byWeekday = { 5: { start: "16:00", end: "02:00" } }; // الجمعة مثال
+        const firebaseConfig = {
+            apiKey: "AIzaSyAz9EtvfCQuyTTgeEcT6F1CjcpCg5JzeSA",
+            authDomain: "anas-project-39b6b.firebaseapp.com",
+            databaseURL: "https://anas-project-39b6b-default-rtdb.firebaseio.com",
+            projectId: "anas-project-39b6b",
+            storageBucket: "anas-project-39b6b.firebasestorage.app",
+            messagingSenderId: "975846667862",
+            appId: "1:975846667862:web:427b6ca200b21c9813edf7",
+            measurementId: "G-X0NHN24EVW"
+        };
 
-        const toMin = t => { const [h, m] = t.split(":").map(Number); return h * 60 + m }
-        const pad = n => String(n).padStart(2, "0")
-        const fromMin = min => { min = (min + 1440) % 1440; return `${pad(Math.floor(min / 60))}:${pad(min % 60)}` }
+        const app = initializeApp(firebaseConfig);
+        const db = getDatabase(app);
 
-        function generateSlots(startStr, endStr, step) {
-            const out = []; let s = toMin(startStr), e = toMin(endStr);
-            const span = (e > s) ? (e - s) : (1440 - s) + e; const steps = Math.floor(span / step);
-            for (let i = 0; i <= steps; i++) out.push(fromMin(s + i * step));
+        /* توابع الوقت + توليد الخانات */
+        const toMin = t => { const [h, m] = t.split(":").map(Number); return h * 60 + m; };
+        const pad = n => String(n).padStart(2, "0");
+        const fromMin = m => `${pad(Math.floor(m / 60))}:${pad(m % 60)}`;
+        function generateSlots(start, end, step) {
+            const out = []; let s = toMin(start), e = toMin(end);
+            const span = e > s ? (e - s) : (1440 - s) + e;
+            const steps = Math.floor(span / step);
+            for (let i = 0; i <= steps; i++) out.push(fromMin((s + i * step) % 1440));
             return out;
         }
-        function getScheduleForDate(dateStr) {
-            const ex = exceptions.find(x => dateStr >= x.from && dateStr <= x.to);
-            if (ex) return { start: ex.start, end: ex.end };
-            const wd = new Date(dateStr).getDay();
-            if (byWeekday[wd]) return byWeekday[wd];
-            return defaultHours;
-        }
-        function fillTimeOptions(dateStr) {
-            const sel = document.getElementById("time");
-            sel.innerHTML = '<option value="">اختر الساعة</option>';
-            if (!dateStr) return;
-            const { start, end } = getScheduleForDate(dateStr);
-            generateSlots(start, end, STEP_MIN).forEach(t => {
-                const opt = document.createElement("option"); opt.value = t; opt.textContent = t; sel.appendChild(opt);
-            });
+        function to12(t) {
+            let [h, m] = t.split(":").map(Number);
+            const suf = h >= 12 ? "م" : "ص";
+            h = ((h + 11) % 12) + 1;
+            return `${pad(h)}:${pad(m)} ${suf}`;
         }
 
-        /* تهيئة التاريخ والخيارات */
+        const STEP = 30;
+        const WORK_START = "14:00";
+        const WORK_END = "01:00";
+
         const dateInput = document.getElementById("date");
-        const today = new Date(); const isoToday = today.toISOString().slice(0, 10);
-        dateInput.min = isoToday; dateInput.value = isoToday; fillTimeOptions(isoToday);
+        const timeGrid = document.getElementById("timeGrid");
+        const timeInput = document.getElementById("time");
+        const noTimes = document.getElementById("noTimes");
+        const groomCheckbox = document.getElementById("groom");
+        const packageBox = document.getElementById("groom-packages");
+        const errsBox = document.getElementById("formErrors");
+
+        /* إظهار/إخفاء الباقات */
+        groomCheckbox.addEventListener("change", () => {
+            packageBox.style.display = groomCheckbox.checked ? "block" : "none";
+        });
+
+        /* شرط تاريخ باقة العرسان: بعد يومين على الأقل */
+        function groomOk(dateStr) {
+            const pick = new Date(dateStr + "T00:00:00");
+            const min = new Date();
+            min.setDate(min.getDate() + 2);
+            const limit = new Date(min.getFullYear(), min.getMonth(), min.getDate());
+            return pick >= limit;
+        }
+
+        /* تعبئة خانات الوقت مع إخفاء المحجوز */
+        async function fillTimeOptions(dateStr) {
+            timeGrid.innerHTML = "";
+            timeInput.value = "";
+            noTimes.style.display = "none";
+            if (!dateStr) return;
+
+            const snap = await get(ref(db, "bookings"));
+            const booked = [];
+            if (snap.exists()) {
+                snap.forEach(c => {
+                    const v = c.val();
+                    if (v.date === dateStr) booked.push(v.time);
+                });
+            }
+
+            const slots = generateSlots(WORK_START, WORK_END, STEP);
+            let freeCount = 0;
+
+            slots.forEach(t => {
+                const div = document.createElement("div");
+                div.textContent = to12(t);
+                if (booked.includes(t)) {
+                    div.className = "time-slot booked";
+                } else {
+                    div.className = "time-slot";
+                    div.onclick = () => {
+                        [...timeGrid.children].forEach(x => x.classList.remove("selected"));
+                        div.classList.add("selected");
+                        timeInput.value = t;
+                    };
+                    freeCount++;
+                }
+                timeGrid.appendChild(div);
+            });
+
+            if (freeCount === 0) noTimes.style.display = "block";
+        }
+
+        /* تهيئة التاريخ الافتراضي */
+        const today = new Date().toISOString().slice(0, 10);
+        dateInput.min = today;
+        dateInput.value = today;
+        fillTimeOptions(today);
         dateInput.addEventListener("change", e => fillTimeOptions(e.target.value));
 
-        /* باقة العريس إظهار/إخفاء */
-        const groomCheckbox = document.getElementById('groom');
-        const packageBox = document.getElementById('groom-packages');
-        groomCheckbox.addEventListener('change', () => { packageBox.style.display = groomCheckbox.checked ? 'block' : 'none' });
+        /* إرسال الحجز */
+        document.getElementById("bookForm").addEventListener("submit", async e => {
+            e.preventDefault();
+            errsBox.style.display = "none"; errsBox.innerHTML = "";
 
-        /* تحقق الحجز */
-        (function () {
-            const form = document.getElementById('bookForm');
-            const errs = document.getElementById('formErrors');
-            function timeInWorkingHours(hhmm, dateStr) {
-                const { start, end } = getScheduleForDate(dateStr);
-                const s = toMin(start), e = toMin(end), m = toMin(hhmm);
-                if (e > s) return m >= s && m <= e;
-                return m >= s || m <= e; // عبر منتصف الليل
+            const name = document.getElementById("client").value.trim();
+            const phone = document.getElementById("phone").value.trim();
+            const barber = document.getElementById("barber").value;
+            const service = document.getElementById("service").value;
+            const date = document.getElementById("date").value;
+            const time = document.getElementById("time").value;
+            const groom = groomCheckbox.checked;
+            const packageType = groom ? document.getElementById("package").value : "";
+
+            const msgs = [];
+
+            if (!name || !phone || !barber || !service || !date || !time)
+                msgs.push("يرجى تعبئة جميع الحقول واختيار وقت متاح.");
+
+            if (groom && !packageType)
+                msgs.push("اختر نوع باقة العرسان.");
+
+            if (groom && !groomOk(date))
+                msgs.push("باقة العرسان يجب أن تكون بعد يومين على الأقل من تاريخ اليوم.");
+
+            // تحقق من صلاحية النموذج نفسه (رقم الهاتف إلخ)
+            if (!e.target.checkValidity())
+                msgs.push("تحقق من صيغة رقم الهاتف والحقول المطلوبة.");
+
+            if (msgs.length) {
+                errsBox.innerHTML = msgs.map(m => "• " + m).join("<br>");
+                errsBox.style.display = "block";
+                return;
             }
-            function groomOk(dateStr, checked) {
-                if (!checked) return true;
-                const pick = new Date(dateStr + "T00:00:00"); const min = new Date(); min.setDate(min.getDate() + 2);
-                return pick >= new Date(min.getFullYear(), min.getMonth(), min.getDate());
-            }
-            form.addEventListener('submit', e => {
-                errs.style.display = 'none'; errs.innerHTML = '';
-                const msgs = [];
-                const d = dateInput.value, t = document.getElementById('time').value;
-                if (!t || !timeInWorkingHours(t, d)) msgs.push("الوقت خارج ساعات العمل لليوم المختار.");
-                if (!groomOk(d, groomCheckbox.checked)) msgs.push("باقة العريس تتطلب موعدًا بعد يومين على الأقل.");
-                if (!form.checkValidity()) msgs.push("تحقق من الحقول المطلوبة وصيغة رقم الهاتف.");
-                if (msgs.length) { e.preventDefault(); errs.innerHTML = msgs.map(m => "• " + m).join("<br>"); errs.style.display = 'block'; }
-                else { e.preventDefault(); alert("تم التحقق من البيانات. نموذج تجريبي بلا إرسال."); }
+
+            const bookingRef = ref(db, "bookings/");
+            const newRef = push(bookingRef);
+            await set(newRef, {
+                name, phone, barber, service, date, time,
+                groom, packageType
             });
-        })();
+
+            alert("✅ تم تأكيد الحجز بنجاح");
+            e.target.reset();
+            groomCheckbox.checked = false;
+            packageBox.style.display = "none";
+            fillTimeOptions(date);
+        });
     </script>
 </body>
 </html>
-```0
