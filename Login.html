@@ -1,0 +1,194 @@
+﻿<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>دخول المشرف | ANAS BARBER</title>
+    <style>
+        body {
+            margin: 0;
+            font-family: "Noto Kufi Arabic","Cairo",sans-serif;
+            background: #0f1115;
+            color: #e7ebf3;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
+
+        .card {
+            background: #0e131b;
+            border: 1px solid #2a3241;
+            border-radius: 14px;
+            padding: 20px 18px;
+            width: min(360px, 94vw);
+            display: grid;
+            gap: 14px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.35);
+        }
+
+        h2 {
+            margin: 0 0 6px 0;
+            text-align: center;
+            font-size: 20px;
+        }
+
+        .subtitle {
+            text-align: center;
+            font-size: 13px;
+            color: #8b93a7;
+            margin-bottom: 4px;
+        }
+
+        label {
+            display: grid;
+            gap: 6px;
+            font-size: 14px;
+        }
+
+        input {
+            background: #0f131b;
+            color: #e7ebf3;
+            border: 1px solid #2a3241;
+            border-radius: 10px;
+            padding: 10px;
+            font-size: 14px;
+        }
+
+            input::placeholder {
+                color: #6f7687;
+                font-size: 13px;
+            }
+
+        button {
+            cursor: pointer;
+            border-radius: 10px;
+            border: none;
+            padding: 10px 14px;
+            font-size: 14px;
+            font-weight: 600;
+        }
+
+        .primary {
+            width: 100%;
+            background: linear-gradient(135deg,#d4af37,#f5d76e);
+            color: #0b0d11;
+            margin-top: 4px;
+        }
+
+            .primary:hover {
+                filter: brightness(1.05);
+            }
+
+        .error {
+            color: #ff8080;
+            font-size: 13px;
+            text-align: center;
+            min-height: 18px;
+        }
+
+        .msg {
+            color: #9be49b;
+            font-size: 13px;
+            text-align: center;
+            min-height: 18px;
+        }
+
+        .switch {
+            text-align: center;
+            font-size: 13px;
+            color: #8b93a7;
+        }
+
+            .switch a {
+                color: #f5d76e;
+                cursor: pointer;
+                text-decoration: none;
+                font-weight: 600;
+            }
+
+        hr {
+            border: none;
+            border-top: 1px solid #2a3241;
+            margin: 6px 0 4px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="card">
+        <h2 id="formTitle">دخول المشرف</h2>
+        <div class="subtitle">لوحة إدارة ANAS BARBER</div>
+
+        <!-- نموذج تسجيل الدخول -->
+        <form id="loginForm">
+            <label for="email">
+                البريد الإلكتروني
+                <input type="email" id="email" required placeholder="admin@example.com" />
+            </label>
+
+            <label for="password">
+                كلمة المرور
+                <input type="password" id="password" required placeholder="••••••••" />
+            </label>
+
+            <button type="submit" class="primary">تسجيل الدخول</button>
+            <p id="loginError" class="error"></p>
+        </form>
+
+        <hr>
+
+        <!-- نموذج إنشاء حساب مشرف جديد -->
+        <form id="registerForm" style="display:none;">
+            <label for="regEmail">
+                بريد المشرف الجديد
+                <input type="email" id="regEmail" required placeholder="new-admin@example.com" />
+            </label>
+
+            <label for="regPassword">
+                كلمة المرور
+                <input type="password" id="regPassword" required placeholder="كلمة مرور قوية" />
+            </label>
+
+            <button type="submit" class="primary">إنشاء حساب مشرف</button>
+            <p id="regMsg" class="msg"></p>
+        </form>
+
+        <div class="switch">
+            <span id="toggleText">لا تملك حساب مشرف؟</span>
+            <a id="toggleLink">إنشاء حساب جديد</a>
+        </div>
+    </div>
+
+    <!-- ربط نظام المصادقة -->
+    <script type="module" src="./auth.js"></script>
+
+    <!-- تبديل بين نموذج الدخول والتسجيل (شكلي فقط، auth.js يتكفل بالباقي) -->
+    <script>
+        const toggleLink = document.getElementById('toggleLink');
+        const toggleText = document.getElementById('toggleText');
+        const loginForm = document.getElementById('loginForm');
+        const registerForm = document.getElementById('registerForm');
+        const title = document.getElementById('formTitle');
+
+        toggleLink.addEventListener('click', () => {
+            const showingLogin = loginForm.style.display !== 'none';
+
+            if (showingLogin) {
+                // عرض إنشاء حساب
+                loginForm.style.display = 'none';
+                registerForm.style.display = 'block';
+                title.textContent = 'إنشاء حساب مشرف';
+                toggleText.textContent = 'لديك حساب بالفعل؟';
+                toggleLink.textContent = 'العودة لتسجيل الدخول';
+            } else {
+                // عرض تسجيل الدخول
+                loginForm.style.display = 'block';
+                registerForm.style.display = 'none';
+                title.textContent = 'دخول المشرف';
+                toggleText.textContent = 'لا تملك حساب مشرف؟';
+                toggleLink.textContent = 'إنشاء حساب جديد';
+            }
+        });
+    </script>
+</body>
+</html>

@@ -100,7 +100,8 @@
             padding: 8px 10px;
             text-align: center;
             user-select: none;
-            pointer-events: auto
+            pointer-events: auto;
+            font-size: 13px;
         }
 
             .slot.open {
@@ -136,10 +137,64 @@
             background: #3a1f1f;
             border-color: #663c3c
         }
+
+        /* جدول الحجوزات */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 13px;
+        }
+
+        th, td {
+            padding: 8px 10px;
+            border-bottom: 1px solid #2a3241;
+            text-align: right;
+        }
+
+        th {
+            background: #151824;
+            font-weight: 600;
+        }
+
+        tbody tr:nth-child(even) {
+            background: #10131a;
+        }
+
+        tbody tr:nth-child(odd) {
+            background: #0d1017;
+        }
     </style>
 </head>
 <body>
     <div class="wrap">
+
+        <!-- جدول الحجوزات من Firebase -->
+        <div class="card">
+            <h2>الحجوزات المسجلة (Firebase)</h2>
+            <div class="row" style="justify-content:space-between">
+                <span id="bkState" class="muted"></span>
+                <button id="reloadBk" class="primary">تحديث</button>
+            </div>
+            <div style="overflow-x:auto">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>الاسم</th>
+                            <th>الهاتف</th>
+                            <th>الحلاق</th>
+                            <th>الخدمة</th>
+                            <th>التاريخ</th>
+                            <th>الوقت</th>
+                        </tr>
+                    </thead>
+                    <tbody id="bkTableBody">
+                        <tr><td colspan="6" class="muted">لا توجد حجوزات</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- بقية لوحة الإدارة القديمة -->
 
         <div class="card">
             <h2>حماية بسيطة</h2>
@@ -207,15 +262,30 @@
 
         <div class="card">
             <h2>الأسعار</h2>
+
+            <h3>بند الحلاقة</h3>
             <div class="grid2">
-                <label><span>قص شعر</span><input id="pHair" type="number" inputmode="decimal" value="25"></label>
-                <label><span>لحية</span><input id="pBeard" type="number" inputmode="decimal" value="15"></label>
-                <label><span>كامل</span><input id="pFull" type="number" inputmode="decimal" value="35"></label>
-                <label><span>صبغة</span><input id="pColor" type="number" inputmode="decimal" value="30"></label>
-                <label><span>أطفال</span><input id="pKids" type="number" inputmode="decimal" value="20"></label>
-                <label><span>عريس عادي</span><input id="pGroomN" type="number" inputmode="decimal" value="150"></label>
-                <label><span>عريس VIP</span><input id="pGroomV" type="number" inputmode="decimal" value="250"></label>
-                <label><span>عريس ذهبية</span><input id="pGroomG" type="number" inputmode="decimal" value="350"></label>
+                <label><span>حلاقة شعر</span><input id="pHair" type="number" inputmode="decimal" value="25"></label>
+                <label><span>حلاقة وجه</span><input id="pFace" type="number" inputmode="decimal" value="15"></label>
+                <label><span>حلاقة شعر ووجه</span><input id="pHairFace" type="number" inputmode="decimal" value="35"></label>
+                <label><span>حلاقة أطفال</span><input id="pKids" type="number" inputmode="decimal" value="20"></label>
+                <label><span>كيرياتين</span><input id="pKeratin" type="number" inputmode="decimal" value="0"></label>
+                <label><span>بروتين</span><input id="pProtein" type="number" inputmode="decimal" value="0"></label>
+                <label><span>بوتكس</span><input id="pBotox" type="number" inputmode="decimal" value="0"></label>
+                <label><span>كولاجين</span><input id="pCollagen" type="number" inputmode="decimal" value="0"></label>
+                <label><span>تنظيف بشرة عادي</span><input id="pSkinNormal" type="number" inputmode="decimal" value="0"></label>
+                <label><span>تنظيف بشرة عميق</span><input id="pSkinDeep" type="number" inputmode="decimal" value="0"></label>
+                <label><span>تنظيف Hydrafacial</span><input id="pHydra" type="number" inputmode="decimal" value="0"></label>
+                <label><span>حلاقة VIP</span><input id="pVipShave" type="number" inputmode="decimal" value="0"></label>
+                <label><span>صباغة</span><input id="pColor" type="number" inputmode="decimal" value="30"></label>
+            </div>
+
+            <h3>بند العرسان</h3>
+            <div class="grid2">
+                <label><span>باقة برونزية</span><input id="pPackBronze" type="number" inputmode="decimal" value="150"></label>
+                <label><span>باقة فضية</span><input id="pPackSilver" type="number" inputmode="decimal" value="200"></label>
+                <label><span>باقة ذهبية</span><input id="pPackGold" type="number" inputmode="decimal" value="300"></label>
+                <label><span>باقة VIP</span><input id="pPackVip" type="number" inputmode="decimal" value="400"></label>
             </div>
         </div>
 
@@ -230,6 +300,7 @@
 
     </div>
 
+    <!-- سكربت الإعدادات القديمة (localStorage + الأوقات + الأسعار) -->
     <script>
         const KEY = "anas_config_v1";
         const PINKEY = "anas_admin_pin";
@@ -238,31 +309,80 @@
 
         function load() {
             const raw = localStorage.getItem(KEY);
-            return raw ? JSON.parse(raw) : {
+            const defaults = {
                 pin: "",
                 step: 30,
                 defaultHours: { start: "14:00", end: "01:00" },
                 byWeekday: {},
-                closed: {}, // {"YYYY-MM-DD":["14:00","14:30",...]}
+                closed: {},
                 prices: {
-                    haircut: 25, beard: 15, full: 35, color: 30, kids: 20,
-                    groom_normal: 150, groom_vip: 250, groom_gold: 350
+                    hair: 25,
+                    face: 15,
+                    hair_face: 35,
+                    kids: 20,
+                    keratin: 0,
+                    protein: 0,
+                    botox: 0,
+                    collagen: 0,
+                    skin_normal: 0,
+                    skin_deep: 0,
+                    hydrafacial: 0,
+                    vip_shave: 0,
+                    color: 30,
+                    pack_bronze: 150,
+                    pack_silver: 200,
+                    pack_gold: 300,
+                    pack_vip: 400
                 }
             };
+            if (!raw) return defaults;
+            try {
+                const parsed = JSON.parse(raw);
+                parsed.prices = { ...defaults.prices, ...(parsed.prices || {}) };
+                parsed.step ??= defaults.step;
+                parsed.defaultHours ??= defaults.defaultHours;
+                parsed.byWeekday ??= defaults.byWeekday;
+                parsed.closed ??= defaults.closed;
+                return parsed;
+            } catch {
+                return defaults;
+            }
         }
-        function save(cfg) { localStorage.setItem(KEY, JSON.stringify(cfg)); state("تم الحفظ"); renderLists(); }
+
+        function save(cfg) {
+            localStorage.setItem(KEY, JSON.stringify(cfg));
+            state("تم الحفظ");
+            renderLists();
+        }
 
         const cfg = load();
 
         // init UI
         $("#pin").value = localStorage.getItem(PINKEY) || "";
-        $("#defStart").value = cfg.defaultHours.start; $("#defEnd").value = cfg.defaultHours.end;
-        $("#step30").checked = cfg.step === 30; $("#step15").checked = cfg.step === 15;
+        $("#defStart").value = cfg.defaultHours.start;
+        $("#defEnd").value = cfg.defaultHours.end;
+        $("#step30").checked = cfg.step === 30;
+        $("#step15").checked = cfg.step === 15;
 
-        const ps = cfg.prices;
-        $("#pHair").value = ps.haircut; $("#pBeard").value = ps.beard; $("#pFull").value = ps.full;
-        $("#pColor").value = ps.color; $("#pKids").value = ps.kids;
-        $("#pGroomN").value = ps.groom_normal; $("#pGroomV").value = ps.groom_vip; $("#pGroomG").value = ps.groom_gold;
+        const ps = cfg.prices || {};
+
+        $("#pHair").value = ps.hair ?? 25;
+        $("#pFace").value = ps.face ?? 15;
+        $("#pHairFace").value = ps.hair_face ?? 35;
+        $("#pKids").value = ps.kids ?? 20;
+        $("#pKeratin").value = ps.keratin ?? 0;
+        $("#pProtein").value = ps.protein ?? 0;
+        $("#pBotox").value = ps.botox ?? 0;
+        $("#pCollagen").value = ps.collagen ?? 0;
+        $("#pSkinNormal").value = ps.skin_normal ?? 0;
+        $("#pSkinDeep").value = ps.skin_deep ?? 0;
+        $("#pHydra").value = ps.hydrafacial ?? 0;
+        $("#pVipShave").value = ps.vip_shave ?? 0;
+        $("#pColor").value = ps.color ?? 30;
+        $("#pPackBronze").value = ps.pack_bronze ?? 150;
+        $("#pPackSilver").value = ps.pack_silver ?? 200;
+        $("#pPackGold").value = ps.pack_gold ?? 300;
+        $("#pPackVip").value = ps.pack_vip ?? 400;
 
         function renderLists() {
             const names = ["الأحد", "الاثنين", "الثلاثاء", "الأربعاء", "الخميس", "الجمعة", "السبت"];
@@ -272,10 +392,11 @@
         }
         renderLists();
 
-        // PIN
-        $("#setPin").onclick = () => { localStorage.setItem(PINKEY, $("#pin").value || ""); state("تم تحديث PIN"); };
+        $("#setPin").onclick = () => {
+            localStorage.setItem(PINKEY, $("#pin").value || "");
+            state("تم تحديث PIN");
+        };
 
-        // step toggles
         function applyStep(step) {
             cfg.step = step;
             $("#step15").checked = step === 15;
@@ -286,10 +407,17 @@
         $("#step15").addEventListener("change", e => { if (e.target.checked) applyStep(15); });
         $("#step30").addEventListener("change", e => { if (e.target.checked) applyStep(30); });
 
-        // time helpers
         const pad = n => String(n).padStart(2, "0");
         const toMin = t => { const [h, m] = t.split(":").map(Number); return h * 60 + m; };
         const fromMin = m => { m = (m + 1440) % 1440; return `${pad(Math.floor(m / 60))}:${pad(m % 60)}`; };
+
+        function to12(t) {
+            let [h, m] = t.split(":").map(Number);
+            const suffix = h >= 12 ? "م" : "ص";
+            h = ((h + 11) % 12) + 1;
+            return `${pad(h)}:${pad(m)} ${suffix}`;
+        }
+
         function generateSlots(start, end, step) {
             let s = toMin(start), e = toMin(end);
             const span = (e > s) ? (e - s) : (1440 - s) + e;
@@ -304,7 +432,6 @@
             return { start: (w?.start || cfg.defaultHours.start), end: (w?.end || cfg.defaultHours.end), step: cfg.step };
         }
 
-        // per-day management
         const dayPick = $("#dayPick"), slotGrid = $("#slotGrid"), countInfo = $("#countInfo");
 
         function renderDay(dateStr) {
@@ -320,16 +447,15 @@
                 const isClosed = closed.has(t);
                 if (isClosed) closedCount++;
                 div.className = "slot " + (isClosed ? "closed" : "open");
-                div.textContent = t;
-                div.setAttribute("data-t", t); // مهم للتفويض
+                div.textContent = to12(t);
+                div.setAttribute("data-t", t);
                 slotGrid.appendChild(div);
             });
 
             countInfo.textContent = `المتاح: ${slots.length - closedCount} | المقفول: ${closedCount}`;
         }
 
-        // تفويض النقر للخانات
-        slotGrid.addEventListener("click", (e) => {
+        slotGrid.addEventListener("click", e => {
             const div = e.target.closest(".slot");
             if (!div) return;
             const t = div.dataset.t;
@@ -341,29 +467,61 @@
             renderDay(d);
         });
 
-        $("#openAll").onclick = () => { const d = dayPick.value; if (!d) return; cfg.closed[d] = []; save(cfg); renderDay(d); };
-        $("#closeAll").onclick = () => { const d = dayPick.value; if (!d) return; const { start, end, step } = scheduleFor(d); cfg.closed[d] = generateSlots(start, end, step); save(cfg); renderDay(d); };
+        $("#openAll").onclick = () => {
+            const d = dayPick.value; if (!d) return;
+            cfg.closed[d] = [];
+            save(cfg); renderDay(d);
+        };
+        $("#closeAll").onclick = () => {
+            const d = dayPick.value; if (!d) return;
+            const { start, end, step } = scheduleFor(d);
+            cfg.closed[d] = generateSlots(start, end, step);
+            save(cfg); renderDay(d);
+        };
 
-        // weekday exceptions
-        $("#addWd").onclick = () => { const d = $("#wdDay").value; cfg.byWeekday[d] = { start: $("#wdStart").value, end: $("#wdEnd").value }; save(cfg); refreshCurrentDay(); };
-        $("#clearWd").onclick = () => { const d = $("#wdDay").value; delete cfg.byWeekday[d]; save(cfg); refreshCurrentDay(); };
+        $("#addWd").onclick = () => {
+            const d = $("#wdDay").value;
+            cfg.byWeekday[d] = { start: $("#wdStart").value, end: $("#wdEnd").value };
+            save(cfg); refreshCurrentDay();
+        };
+        $("#clearWd").onclick = () => {
+            const d = $("#wdDay").value;
+            delete cfg.byWeekday[d];
+            save(cfg); refreshCurrentDay();
+        };
 
-        // save all
         $("#saveAll").onclick = () => {
             cfg.defaultHours = { start: $("#defStart").value, end: $("#defEnd").value };
             cfg.prices = {
-                haircut: +$("#pHair").value, beard: +$("#pBeard").value, full: +$("#pFull").value,
-                color: +$("#pColor").value, kids: +$("#pKids").value,
-                groom_normal: +$("#pGroomN").value, groom_vip: +$("#pGroomV").value, groom_gold: +$("#pGroomG").value
+                hair: +$("#pHair").value,
+                face: +$("#pFace").value,
+                hair_face: +$("#pHairFace").value,
+                kids: +$("#pKids").value,
+                keratin: +$("#pKeratin").value,
+                protein: +$("#pProtein").value,
+                botox: +$("#pBotox").value,
+                collagen: +$("#pCollagen").value,
+                skin_normal: +$("#pSkinNormal").value,
+                skin_deep: +$("#pSkinDeep").value,
+                hydrafacial: +$("#pHydra").value,
+                vip_shave: +$("#pVipShave").value,
+                color: +$("#pColor").value,
+                pack_bronze: +$("#pPackBronze").value,
+                pack_silver: +$("#pPackSilver").value,
+                pack_gold: +$("#pPackGold").value,
+                pack_vip: +$("#pPackVip").value
             };
-            save(cfg);
-            refreshCurrentDay();
+            save(cfg); refreshCurrentDay();
         };
 
-        // wipe
-        $("#wipe").onclick = () => { if (confirm("مسح كل الإعدادات؟")) { localStorage.removeItem(KEY); localStorage.removeItem(PINKEY); location.reload(); } };
+        $("#wipe").onclick = () => {
+            if (confirm("مسح كل الإعدادات؟")) {
+                localStorage.removeItem(KEY);
+                localStorage.removeItem(PINKEY);
+                location.reload();
+            }
+        };
 
-        // refresh day on field changes
         function refreshCurrentDay() { if (dayPick && dayPick.value) renderDay(dayPick.value); }
         $("#defStart").addEventListener("change", refreshCurrentDay);
         $("#defEnd").addEventListener("change", refreshCurrentDay);
@@ -371,12 +529,95 @@
         $("#wdEnd").addEventListener("change", refreshCurrentDay);
         dayPick.addEventListener("change", () => renderDay(dayPick.value));
 
-        // init
         (function initDay() {
             const today = new Date().toISOString().slice(0, 10);
-            dayPick.value = today; renderDay(today);
+            dayPick.value = today;
+            renderDay(today);
         })();
+    </script>
+
+    <!-- استدعاء auth.js لحماية الصفحة بحساب المشرف -->
+    <script type="module" src="./auth.js"></script>
+
+    <!-- سكربت Firebase لعرض كل الحجوزات باستخدام نفس تطبيق Firebase من auth.js -->
+    <script type="module">
+        import { getApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+        import { getDatabase, ref, get } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
+
+        const app = getApp();          // يستخدم التطبيق الذي تم تهيئته في auth.js
+        const db = getDatabase(app);
+
+        const tbody = document.getElementById("bkTableBody");
+        const bkState = document.getElementById("bkState");
+        const reload = document.getElementById("reloadBk");
+
+        const serviceNames = {
+            hair: "حلاقة شعر",
+            face: "حلاقة وجه",
+            hair_face: "حلاقة شعر ووجه",
+            kids: "حلاقة أطفال",
+            keratin: "كيرياتين",
+            protein: "بروتين",
+            botox: "بوتكس",
+            collagen: "كولاجين",
+            skin_normal: "تنظيف بشرة عادي",
+            skin_deep: "تنظيف بشرة عميق",
+            hydrafacial: "Hydrafacial",
+            vip_shave: "حلاقة VIP",
+            color: "صباغة"
+        };
+
+        function setBkState(msg) { bkState.textContent = msg || ""; }
+
+        function renderBookings(list) {
+            tbody.innerHTML = "";
+            if (!list.length) {
+                tbody.innerHTML = '<tr><td colspan="6" class="muted">لا توجد حجوزات</td></tr>';
+                setBkState("");
+                return;
+            }
+            list.sort((a, b) => ((a.date || "") + (a.time || "")).localeCompare((b.date || "") + (b.time || "")));
+            list.forEach(b => {
+                const tr = document.createElement("tr");
+                const s = serviceNames[b.service] || b.service || "";
+                tr.innerHTML = `
+                        <td>${b.name || ""}</td>
+                        <td>${b.phone || ""}</td>
+                        <td>${b.barber || ""}</td>
+                        <td>${s}</td>
+                        <td>${b.date || ""}</td>
+                        <td>${b.time || ""}</td>`;
+                tbody.appendChild(tr);
+            });
+            setBkState("عدد الحجوزات: " + list.length);
+        }
+
+        function collectBookings(snapshot, list) {
+            snapshot.forEach(childSnap => {
+                const val = childSnap.val();
+                if (val && typeof val === "object" &&
+                    (val.name || val.phone || val.service || val.date || val.time)) {
+                    list.push(val);
+                } else if (childSnap.hasChildren()) {
+                    collectBookings(childSnap, list);
+                }
+            });
+        }
+
+        async function loadAllBookings() {
+            const bookingsRef = ref(db, "bookings");
+            const snap = await get(bookingsRef);
+            const list = [];
+            if (snap.exists()) collectBookings(snap, list);
+
+            const today = new Date().toISOString().slice(0, 10);
+            const futureOnly = list.filter(b => !b.date || b.date >= today);
+
+            renderBookings(futureOnly);
+        }
+
+        reload.addEventListener("click", loadAllBookings);
+        loadAllBookings();
     </script>
 </body>
 </html>
-```0
