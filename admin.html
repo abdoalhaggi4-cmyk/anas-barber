@@ -13,7 +13,7 @@
         }
 
         .wrap {
-            width: min(900px,92vw);
+            width: min(1000px,92vw);
             margin: 24px auto;
             display: grid;
             gap: 16px
@@ -37,7 +37,7 @@
             gap: 6px
         }
 
-        input, select, textarea {
+        input, select {
             background: #0f131b;
             color: #e7ebf3;
             border: 1px solid #2a3241;
@@ -54,7 +54,8 @@
         .row {
             display: flex;
             gap: 10px;
-            align-items: center
+            align-items: center;
+            flex-wrap: wrap
         }
 
         .muted {
@@ -82,98 +83,80 @@
             border-color: #773333
         }
 
-        .ok {
-            color: #9be49b
-        }
-
-        /* شبكة إدارة يوم محدد */
-        .slot-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill,minmax(84px,1fr));
-            gap: 8px;
-            position: relative
-        }
-
-        .slot {
-            border: 1px solid #2a3241;
-            border-radius: 10px;
-            padding: 8px 10px;
-            text-align: center;
-            user-select: none;
-            pointer-events: auto;
-            font-size: 13px;
-        }
-
-            .slot.open {
-                background: #0f131b
-            }
-
-            .slot.closed {
-                background: #3a1f1f;
-                color: #ffb4b4;
-                border-color: #663c3c
-            }
-
-        .legend {
-            display: flex;
-            gap: 8px;
-            align-items: center;
-            font-size: 13px;
-            color: #8b93a7
-        }
-
-            .legend .box {
-                width: 14px;
-                height: 14px;
-                border-radius: 4px;
-                border: 1px solid #2a3241
-            }
-
-        .box.open {
-            background: #0f131b
-        }
-
-        .box.closed {
-            background: #3a1f1f;
-            border-color: #663c3c
-        }
-
-        /* جدول الحجوزات */
         table {
             width: 100%;
             border-collapse: collapse;
-            font-size: 13px;
+            font-size: 13px
         }
 
         th, td {
             padding: 8px 10px;
             border-bottom: 1px solid #2a3241;
-            text-align: right;
+            text-align: right
         }
 
         th {
             background: #151824;
-            font-weight: 600;
+            font-weight: 600
         }
 
         tbody tr:nth-child(even) {
-            background: #10131a;
+            background: #10131a
         }
 
         tbody tr:nth-child(odd) {
-            background: #0d1017;
+            background: #0d1017
+        }
+
+        .ok {
+            color: #9be49b
+        }
+
+        .chip {
+            padding: 2px 8px;
+            border-radius: 999px;
+            font-size: 12px
+        }
+
+        .pending {
+            background: #3a2f13;
+            color: #f7e39a
+        }
+
+        .confirmed {
+            background: #1f3a20;
+            color: #9be49b
+        }
+
+        .canceled {
+            background: #402020;
+            color: #ffb4b4
         }
     </style>
 </head>
 <body>
     <div class="wrap">
 
-        <!-- جدول الحجوزات من Firebase -->
         <div class="card">
-            <h2>الحجوزات المسجلة (Firebase)</h2>
             <div class="row" style="justify-content:space-between">
+                <h2>الحجوزات المسجلة</h2>
+                <div class="row">
+                    <button class="primary" onclick="logout()">تسجيل الخروج</button>
+                </div>
+            </div>
+            <div class="row">
+                <label>تصفية حسب التاريخ <input type="date" id="fDate"></label>
+                <label>
+                    الحالة
+                    <select id="fStatus">
+                        <option value="">الكل</option>
+                        <option value="pending">قيد المراجعة</option>
+                        <option value="confirmed">مؤكد</option>
+                        <option value="canceled">ملغي</option>
+                    </select>
+                </label>
+                <button id="clearFilters">إزالة التصفية</button>
                 <span id="bkState" class="muted"></span>
-                <button id="reloadBk" class="primary">تحديث</button>
             </div>
             <div style="overflow-x:auto">
                 <table>
@@ -185,43 +168,34 @@
                             <th>الخدمة</th>
                             <th>التاريخ</th>
                             <th>الوقت</th>
+                            <th>الحالة</th>
+                            <th>إجراءات</th>
                         </tr>
                     </thead>
-                    <tbody id="bkTableBody">
-                        <tr><td colspan="6" class="muted">لا توجد حجوزات</td></tr>
-                    </tbody>
+                    <tbody id="bkTableBody"><tr><td colspan="8" class="muted">لا توجد حجوزات</td></tr></tbody>
                 </table>
             </div>
         </div>
 
-        <!-- بقية لوحة الإدارة القديمة -->
-
         <div class="card">
-            <h2>حماية بسيطة</h2>
-            <div class="row">
-                <input id="pin" placeholder="أدخل PIN مؤقت" type="password" style="max-width:220px">
-                <button id="setPin" class="primary">حفظ/تحديث PIN</button>
-                <span id="pinNote" class="muted">يحفظ في المتصفح فقط.</span>
-            </div>
-        </div>
-
-        <div class="card">
-            <h2>أوقات العمل الافتراضية</h2>
+            <h2>الإعدادات العامة (مزامنة مع القاعدة)</h2>
             <div class="grid2">
-                <label><span>من</span><input id="defStart" value="14:00" type="time"></label>
-                <label><span>إلى</span><input id="defEnd" value="01:00" type="time"></label>
+                <label>من <input id="defStart" type="time"></label>
+                <label>إلى <input id="defEnd" type="time"></label>
+                <label>
+                    فاصل الدقائق
+                    <select id="step"><option>15</option><option selected>30</option><option>60</option></select>
+                </label>
+                <label>
+                    أرقام واتساب الحلاق (مفصولة بفواصل)
+                    <input id="barberPhones" placeholder="+2189..., +2189...">
+                </label>
             </div>
-            <div class="row">
-                <label class="row"><input id="step30" type="checkbox" checked> <span>فاصل 30 دقيقة</span></label>
-                <label class="row"><input id="step15" type="checkbox"> <span>فاصل 15 دقيقة</span></label>
-            </div>
-        </div>
 
-        <div class="card">
-            <h2>استثناءات حسب يوم الأسبوع</h2>
+            <h3>استثناءات الأسبوع</h3>
             <div class="grid2">
                 <label>
-                    <span>اليوم</span>
+                    اليوم
                     <select id="wdDay">
                         <option value="0">الأحد</option>
                         <option value="1">الاثنين</option>
@@ -232,392 +206,202 @@
                         <option value="6">السبت</option>
                     </select>
                 </label>
-                <label><span>من</span><input id="wdStart" type="time" value="16:00"></label>
-                <label><span>إلى</span><input id="wdEnd" type="time" value="02:00"></label>
+                <label>من <input id="wdStart" type="time" value="16:00"></label>
+                <label>إلى <input id="wdEnd" type="time" value="02:00"></label>
             </div>
             <div class="row">
-                <button id="addWd" class="primary">حفظ/تحديث هذا اليوم</button>
-                <button id="clearWd" class="warn">حذف هذا اليوم</button>
+                <button id="addWd" class="primary">حفظ/تحديث اليوم</button>
+                <button id="clearWd" class="warn">حذف اليوم</button>
             </div>
             <div id="wdList" class="muted"></div>
-        </div>
 
-        <div class="card" id="perDayCard">
-            <h2>إدارة أوقات يوم محدد</h2>
+            <h3>إغلاق يوم محدد</h3>
             <div class="row">
-                <label class="row" style="gap:8px">
-                    <span>اختر التاريخ</span>
-                    <input id="dayPick" type="date">
-                </label>
-                <button id="openAll" class="primary">فتح الكل</button>
-                <button id="closeAll" class="warn">قفل الكل</button>
+                <label>التاريخ <input id="dayPick" type="date"></label>
+                <button id="closeAll" class="warn">قفل كل الساعات</button>
+                <button id="openAll" class="primary">فتح كل الساعات</button>
                 <span id="countInfo" class="muted"></span>
             </div>
-            <div class="legend">
-                <div class="box open"></div><span>متاح</span>
-                <div class="box closed"></div><span>مقفول</span>
-            </div>
-            <div id="slotGrid" class="slot-grid"></div>
-        </div>
 
-        <div class="card">
-            <h2>الأسعار</h2>
-
-            <h3>بند الحلاقة</h3>
-            <div class="grid2">
-                <label><span>حلاقة شعر</span><input id="pHair" type="number" inputmode="decimal" value="25"></label>
-                <label><span>حلاقة وجه</span><input id="pFace" type="number" inputmode="decimal" value="15"></label>
-                <label><span>حلاقة شعر ووجه</span><input id="pHairFace" type="number" inputmode="decimal" value="35"></label>
-                <label><span>حلاقة أطفال</span><input id="pKids" type="number" inputmode="decimal" value="20"></label>
-                <label><span>كيرياتين</span><input id="pKeratin" type="number" inputmode="decimal" value="0"></label>
-                <label><span>بروتين</span><input id="pProtein" type="number" inputmode="decimal" value="0"></label>
-                <label><span>بوتكس</span><input id="pBotox" type="number" inputmode="decimal" value="0"></label>
-                <label><span>كولاجين</span><input id="pCollagen" type="number" inputmode="decimal" value="0"></label>
-                <label><span>تنظيف بشرة عادي</span><input id="pSkinNormal" type="number" inputmode="decimal" value="0"></label>
-                <label><span>تنظيف بشرة عميق</span><input id="pSkinDeep" type="number" inputmode="decimal" value="0"></label>
-                <label><span>تنظيف Hydrafacial</span><input id="pHydra" type="number" inputmode="decimal" value="0"></label>
-                <label><span>حلاقة VIP</span><input id="pVipShave" type="number" inputmode="decimal" value="0"></label>
-                <label><span>صباغة</span><input id="pColor" type="number" inputmode="decimal" value="30"></label>
-            </div>
-
-            <h3>بند العرسان</h3>
-            <div class="grid2">
-                <label><span>باقة برونزية</span><input id="pPackBronze" type="number" inputmode="decimal" value="150"></label>
-                <label><span>باقة فضية</span><input id="pPackSilver" type="number" inputmode="decimal" value="200"></label>
-                <label><span>باقة ذهبية</span><input id="pPackGold" type="number" inputmode="decimal" value="300"></label>
-                <label><span>باقة VIP</span><input id="pPackVip" type="number" inputmode="decimal" value="400"></label>
-            </div>
-        </div>
-
-        <div class="card">
             <div class="row">
-                <button id="saveAll" class="primary">حفظ الإعدادات</button>
-                <button id="wipe" class="warn">مسح كل الإعدادات</button>
+                <button id="saveConfig" class="primary">حفظ الإعدادات في القاعدة</button>
                 <span id="state" class="ok"></span>
             </div>
-            <div class="muted">تُحفظ الإعدادات في المتصفح عبر <code>localStorage</code> وتقرأها صفحة الحجز تلقائيًا.</div>
+            <div class="muted">تقرأ صفحة الحجز هذه الإعدادات لحظيًا.</div>
         </div>
 
     </div>
 
-    <!-- سكربت الإعدادات القديمة (localStorage + الأوقات + الأسعار) -->
-    <script>
-        const KEY = "anas_config_v1";
-        const PINKEY = "anas_admin_pin";
-        const $ = s => document.querySelector(s);
-        const state = m => $("#state").textContent = m;
-
-        function load() {
-            const raw = localStorage.getItem(KEY);
-            const defaults = {
-                pin: "",
-                step: 30,
-                defaultHours: { start: "14:00", end: "01:00" },
-                byWeekday: {},
-                closed: {},
-                prices: {
-                    hair: 25,
-                    face: 15,
-                    hair_face: 35,
-                    kids: 20,
-                    keratin: 0,
-                    protein: 0,
-                    botox: 0,
-                    collagen: 0,
-                    skin_normal: 0,
-                    skin_deep: 0,
-                    hydrafacial: 0,
-                    vip_shave: 0,
-                    color: 30,
-                    pack_bronze: 150,
-                    pack_silver: 200,
-                    pack_gold: 300,
-                    pack_vip: 400
-                }
-            };
-            if (!raw) return defaults;
-            try {
-                const parsed = JSON.parse(raw);
-                parsed.prices = { ...defaults.prices, ...(parsed.prices || {}) };
-                parsed.step ??= defaults.step;
-                parsed.defaultHours ??= defaults.defaultHours;
-                parsed.byWeekday ??= defaults.byWeekday;
-                parsed.closed ??= defaults.closed;
-                return parsed;
-            } catch {
-                return defaults;
-            }
-        }
-
-        function save(cfg) {
-            localStorage.setItem(KEY, JSON.stringify(cfg));
-            state("تم الحفظ");
-            renderLists();
-        }
-
-        const cfg = load();
-
-        // init UI
-        $("#pin").value = localStorage.getItem(PINKEY) || "";
-        $("#defStart").value = cfg.defaultHours.start;
-        $("#defEnd").value = cfg.defaultHours.end;
-        $("#step30").checked = cfg.step === 30;
-        $("#step15").checked = cfg.step === 15;
-
-        const ps = cfg.prices || {};
-
-        $("#pHair").value = ps.hair ?? 25;
-        $("#pFace").value = ps.face ?? 15;
-        $("#pHairFace").value = ps.hair_face ?? 35;
-        $("#pKids").value = ps.kids ?? 20;
-        $("#pKeratin").value = ps.keratin ?? 0;
-        $("#pProtein").value = ps.protein ?? 0;
-        $("#pBotox").value = ps.botox ?? 0;
-        $("#pCollagen").value = ps.collagen ?? 0;
-        $("#pSkinNormal").value = ps.skin_normal ?? 0;
-        $("#pSkinDeep").value = ps.skin_deep ?? 0;
-        $("#pHydra").value = ps.hydrafacial ?? 0;
-        $("#pVipShave").value = ps.vip_shave ?? 0;
-        $("#pColor").value = ps.color ?? 30;
-        $("#pPackBronze").value = ps.pack_bronze ?? 150;
-        $("#pPackSilver").value = ps.pack_silver ?? 200;
-        $("#pPackGold").value = ps.pack_gold ?? 300;
-        $("#pPackVip").value = ps.pack_vip ?? 400;
-
-        function renderLists() {
-            const names = ["الأحد", "الاثنين", "الثلاثاء", "الأربعاء", "الخميس", "الجمعة", "السبت"];
-            $("#wdList").innerHTML = Object.keys(cfg.byWeekday).length
-                ? Object.entries(cfg.byWeekday).map(([d, v]) => `• ${names[+d]}: ${v.start}-${v.end}`).join("<br>")
-                : "لا استثناءات أسبوعية";
-        }
-        renderLists();
-
-        $("#setPin").onclick = () => {
-            localStorage.setItem(PINKEY, $("#pin").value || "");
-            state("تم تحديث PIN");
-        };
-
-        function applyStep(step) {
-            cfg.step = step;
-            $("#step15").checked = step === 15;
-            $("#step30").checked = step === 30;
-            save(cfg);
-            refreshCurrentDay();
-        }
-        $("#step15").addEventListener("change", e => { if (e.target.checked) applyStep(15); });
-        $("#step30").addEventListener("change", e => { if (e.target.checked) applyStep(30); });
-
-        const pad = n => String(n).padStart(2, "0");
-        const toMin = t => { const [h, m] = t.split(":").map(Number); return h * 60 + m; };
-        const fromMin = m => { m = (m + 1440) % 1440; return `${pad(Math.floor(m / 60))}:${pad(m % 60)}`; };
-
-        function to12(t) {
-            let [h, m] = t.split(":").map(Number);
-            const suffix = h >= 12 ? "م" : "ص";
-            h = ((h + 11) % 12) + 1;
-            return `${pad(h)}:${pad(m)} ${suffix}`;
-        }
-
-        function generateSlots(start, end, step) {
-            let s = toMin(start), e = toMin(end);
-            const span = (e > s) ? (e - s) : (1440 - s) + e;
-            const steps = Math.floor(span / step);
-            const out = [];
-            for (let i = 0; i <= steps; i++) out.push(fromMin(s + i * step));
-            return out;
-        }
-        function scheduleFor(dateStr) {
-            const wd = new Date(dateStr).getDay();
-            const w = cfg.byWeekday[wd];
-            return { start: (w?.start || cfg.defaultHours.start), end: (w?.end || cfg.defaultHours.end), step: cfg.step };
-        }
-
-        const dayPick = $("#dayPick"), slotGrid = $("#slotGrid"), countInfo = $("#countInfo");
-
-        function renderDay(dateStr) {
-            if (!dateStr) { slotGrid.innerHTML = ""; countInfo.textContent = ""; return; }
-            const sch = scheduleFor(dateStr);
-            const slots = generateSlots(sch.start, sch.end, sch.step);
-            const closed = new Set(cfg.closed[dateStr] || []);
-            slotGrid.innerHTML = "";
-            let closedCount = 0;
-
-            slots.forEach(t => {
-                const div = document.createElement("div");
-                const isClosed = closed.has(t);
-                if (isClosed) closedCount++;
-                div.className = "slot " + (isClosed ? "closed" : "open");
-                div.textContent = to12(t);
-                div.setAttribute("data-t", t);
-                slotGrid.appendChild(div);
-            });
-
-            countInfo.textContent = `المتاح: ${slots.length - closedCount} | المقفول: ${closedCount}`;
-        }
-
-        slotGrid.addEventListener("click", e => {
-            const div = e.target.closest(".slot");
-            if (!div) return;
-            const t = div.dataset.t;
-            const d = dayPick.value;
-            const arr = cfg.closed[d] || (cfg.closed[d] = []);
-            const i = arr.indexOf(t);
-            if (i === -1) arr.push(t); else arr.splice(i, 1);
-            save(cfg);
-            renderDay(d);
-        });
-
-        $("#openAll").onclick = () => {
-            const d = dayPick.value; if (!d) return;
-            cfg.closed[d] = [];
-            save(cfg); renderDay(d);
-        };
-        $("#closeAll").onclick = () => {
-            const d = dayPick.value; if (!d) return;
-            const { start, end, step } = scheduleFor(d);
-            cfg.closed[d] = generateSlots(start, end, step);
-            save(cfg); renderDay(d);
-        };
-
-        $("#addWd").onclick = () => {
-            const d = $("#wdDay").value;
-            cfg.byWeekday[d] = { start: $("#wdStart").value, end: $("#wdEnd").value };
-            save(cfg); refreshCurrentDay();
-        };
-        $("#clearWd").onclick = () => {
-            const d = $("#wdDay").value;
-            delete cfg.byWeekday[d];
-            save(cfg); refreshCurrentDay();
-        };
-
-        $("#saveAll").onclick = () => {
-            cfg.defaultHours = { start: $("#defStart").value, end: $("#defEnd").value };
-            cfg.prices = {
-                hair: +$("#pHair").value,
-                face: +$("#pFace").value,
-                hair_face: +$("#pHairFace").value,
-                kids: +$("#pKids").value,
-                keratin: +$("#pKeratin").value,
-                protein: +$("#pProtein").value,
-                botox: +$("#pBotox").value,
-                collagen: +$("#pCollagen").value,
-                skin_normal: +$("#pSkinNormal").value,
-                skin_deep: +$("#pSkinDeep").value,
-                hydrafacial: +$("#pHydra").value,
-                vip_shave: +$("#pVipShave").value,
-                color: +$("#pColor").value,
-                pack_bronze: +$("#pPackBronze").value,
-                pack_silver: +$("#pPackSilver").value,
-                pack_gold: +$("#pPackGold").value,
-                pack_vip: +$("#pPackVip").value
-            };
-            save(cfg); refreshCurrentDay();
-        };
-
-        $("#wipe").onclick = () => {
-            if (confirm("مسح كل الإعدادات؟")) {
-                localStorage.removeItem(KEY);
-                localStorage.removeItem(PINKEY);
-                location.reload();
-            }
-        };
-
-        function refreshCurrentDay() { if (dayPick && dayPick.value) renderDay(dayPick.value); }
-        $("#defStart").addEventListener("change", refreshCurrentDay);
-        $("#defEnd").addEventListener("change", refreshCurrentDay);
-        $("#wdStart").addEventListener("change", refreshCurrentDay);
-        $("#wdEnd").addEventListener("change", refreshCurrentDay);
-        dayPick.addEventListener("change", () => renderDay(dayPick.value));
-
-        (function initDay() {
-            const today = new Date().toISOString().slice(0, 10);
-            dayPick.value = today;
-            renderDay(today);
-        })();
-    </script>
-
-    <!-- استدعاء auth.js لحماية الصفحة بحساب المشرف -->
     <script type="module" src="./auth.js"></script>
-
-    <!-- سكربت Firebase لعرض كل الحجوزات باستخدام نفس تطبيق Firebase من auth.js -->
     <script type="module">
         import { getApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-        import { getDatabase, ref, get } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
+        import { getDatabase, ref, onValue, set, get, update, child } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
 
-        const app = getApp();          // يستخدم التطبيق الذي تم تهيئته في auth.js
-        const db = getDatabase(app);
+        const db = getDatabase(getApp());
 
+        // ---------- حجوزات لحظية + إجراءات ----------
         const tbody = document.getElementById("bkTableBody");
+        const fDate = document.getElementById("fDate");
+        const fStatus = document.getElementById("fStatus");
+        const clearFilters = document.getElementById("clearFilters");
         const bkState = document.getElementById("bkState");
-        const reload = document.getElementById("reloadBk");
 
-        const serviceNames = {
-            hair: "حلاقة شعر",
-            face: "حلاقة وجه",
-            hair_face: "حلاقة شعر ووجه",
-            kids: "حلاقة أطفال",
-            keratin: "كيرياتين",
-            protein: "بروتين",
-            botox: "بوتكس",
-            collagen: "كولاجين",
-            skin_normal: "تنظيف بشرة عادي",
-            skin_deep: "تنظيف بشرة عميق",
-            hydrafacial: "Hydrafacial",
-            vip_shave: "حلاقة VIP",
-            color: "صباغة"
-        };
-
-        function setBkState(msg) { bkState.textContent = msg || ""; }
-
-        function renderBookings(list) {
-            tbody.innerHTML = "";
-            if (!list.length) {
-                tbody.innerHTML = '<tr><td colspan="6" class="muted">لا توجد حجوزات</td></tr>';
-                setBkState("");
-                return;
+        let ALL = [];
+        onValue(ref(db, "bookings"), (snap) => {
+            ALL = [];
+            if (snap.exists()) {
+                snap.forEach(ch => { const v = ch.val(); ALL.push({ id: ch.key, ...v }); });
             }
+            render();
+        });
+
+        clearFilters.onclick = () => { fDate.value = ""; fStatus.value = ""; render(); }
+
+        function render() {
+            const t = fDate.value;
+            const s = fStatus.value;
+            let list = ALL.slice();
+            if (t) list = list.filter(x => x.date === t);
+            if (s) list = list.filter(x => x.status === s);
+
             list.sort((a, b) => ((a.date || "") + (a.time || "")).localeCompare((b.date || "") + (b.time || "")));
+            tbody.innerHTML = "";
+            if (!list.length) { tbody.innerHTML = '<tr><td colspan="8" class="muted">لا توجد حجوزات</td></tr>'; bkState.textContent = ""; return; }
+
             list.forEach(b => {
                 const tr = document.createElement("tr");
-                const s = serviceNames[b.service] || b.service || "";
+                const chipClass = b.status || "pending";
                 tr.innerHTML = `
-                        <td>${b.name || ""}</td>
-                        <td>${b.phone || ""}</td>
-                        <td>${b.barber || ""}</td>
-                        <td>${s}</td>
-                        <td>${b.date || ""}</td>
-                        <td>${b.time || ""}</td>`;
+            <td>${b.name || ""}</td>
+            <td>${b.phone || ""}</td>
+            <td>${b.barber || ""}</td>
+            <td>${b.service || ""}</td>
+            <td>${b.date || ""}</td>
+            <td>${b.time || ""}</td>
+            <td><span class="chip ${chipClass}">${statusName(b.status)}</span></td>
+            <td class="row">
+              <button data-id="${b.id}" data-act="confirm" class="primary">تأكيد</button>
+              <button data-id="${b.id}" data-act="cancel" class="warn">إلغاء</button>
+            </td>`;
                 tbody.appendChild(tr);
             });
-            setBkState("عدد الحجوزات: " + list.length);
+            bkState.textContent = "عدد الحجوزات: " + list.length;
         }
 
-        function collectBookings(snapshot, list) {
-            snapshot.forEach(childSnap => {
-                const val = childSnap.val();
-                if (val && typeof val === "object" &&
-                    (val.name || val.phone || val.service || val.date || val.time)) {
-                    list.push(val);
-                } else if (childSnap.hasChildren()) {
-                    collectBookings(childSnap, list);
-                }
-            });
+        function statusName(s) {
+            if (s === "confirmed") return "مؤكد";
+            if (s === "canceled") return "ملغي";
+            return "قيد المراجعة";
         }
 
-        async function loadAllBookings() {
-            const bookingsRef = ref(db, "bookings");
-            const snap = await get(bookingsRef);
-            const list = [];
-            if (snap.exists()) collectBookings(snap, list);
+        tbody.addEventListener("click", async (e) => {
+            const btn = e.target.closest("button"); if (!btn) return;
+            const id = btn.dataset.id; const act = btn.dataset.act;
+            const newStatus = act === "confirm" ? "confirmed" : "canceled";
+            await update(ref(db, "bookings/" + id), { status: newStatus });
 
-            const today = new Date().toISOString().slice(0, 10);
-            const futureOnly = list.filter(b => !b.date || b.date >= today);
+            // نداء Cloud Function لإرسال واتساب حسب الحالة
+            try {
+                await fetch("https://us-central1-anas-project-39b6b.cloudfunctions.net/sendWhatsAppOnStatusChange", {
+                    method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id, status: newStatus })
+                });
+            } catch (_) { }
+        });
 
-            renderBookings(futureOnly);
+        // ---------- إعدادات متزامنة ----------
+        const defStart = document.getElementById("defStart");
+        const defEnd = document.getElementById("defEnd");
+        const step = document.getElementById("step");
+        const barberPhones = document.getElementById("barberPhones");
+        const wdDay = document.getElementById("wdDay");
+        const wdStart = document.getElementById("wdStart");
+        const wdEnd = document.getElementById("wdEnd");
+        const addWd = document.getElementById("addWd");
+        const clearWd = document.getElementById("clearWd");
+        const wdList = document.getElementById("wdList");
+        const dayPick = document.getElementById("dayPick");
+        const closeAll = document.getElementById("closeAll");
+        const openAll = document.getElementById("openAll");
+        const countInfo = document.getElementById("countInfo");
+        const stateEl = document.getElementById("state");
+        const saveConfig = document.getElementById("saveConfig");
+
+        let CONFIG = { step: 30, defaultHours: { start: "14:00", end: "01:00" }, byWeekday: {}, closed: {}, barbers: { list: ["anas"], phones: [] } };
+        onValue(ref(db, "config"), (s) => {
+            if (s.exists()) { CONFIG = { ...CONFIG, ...s.val() }; hydrate(); renderWdList(); renderDay(); }
+        });
+
+        function hydrate() {
+            defStart.value = CONFIG.defaultHours.start || "14:00";
+            defEnd.value = CONFIG.defaultHours.end || "01:00";
+            step.value = String(CONFIG.step || 30);
+            barberPhones.value = (CONFIG.barbers?.phones || []).join(", ");
         }
 
-        reload.addEventListener("click", loadAllBookings);
-        loadAllBookings();
+        function renderWdList() {
+            const names = ["الأحد", "الاثنين", "الثلاثاء", "الأربعاء", "الخميس", "الجمعة", "السبت"];
+            const obj = CONFIG.byWeekday || {};
+            wdList.innerHTML = Object.keys(obj).length
+                ? Object.entries(obj).map(([k, v]) => `• ${names[+k]}: ${v.start}-${v.end}`).join("<br>")
+                : "لا استثناءات أسبوعية";
+        }
+
+        async function saveAll() {
+            CONFIG.defaultHours = { start: defStart.value, end: defEnd.value };
+            CONFIG.step = parseInt(step.value, 10) || 30;
+            CONFIG.barbers = CONFIG.barbers || {};
+            CONFIG.barbers.phones = barberPhones.value.split(",").map(x => x.trim()).filter(Boolean);
+
+            await set(ref(db, "config"), CONFIG);
+            stateEl.textContent = "تم الحفظ ومزامنته";
+            setTimeout(() => stateEl.textContent = "", 1500);
+        }
+        saveConfig.onclick = saveAll;
+
+        addWd.onclick = async () => {
+            const d = wdDay.value;
+            CONFIG.byWeekday = CONFIG.byWeekday || {};
+            CONFIG.byWeekday[d] = { start: wdStart.value, end: wdEnd.value };
+            await set(ref(db, "config/byWeekday"), CONFIG.byWeekday);
+            renderWdList();
+        };
+        clearWd.onclick = async () => {
+            const d = wdDay.value;
+            if (CONFIG.byWeekday) { delete CONFIG.byWeekday[d]; await set(ref(db, "config/byWeekday"), CONFIG.byWeekday); renderWdList(); }
+        };
+
+        dayPick.addEventListener("change", renderDay);
+        closeAll.onclick = async () => {
+            const d = dayPick.value; if (!d) return;
+            const st = CONFIG.defaultHours.start || "14:00";
+            const en = CONFIG.defaultHours.end || "01:00";
+            const stepMin = CONFIG.step || 30;
+            const arr = genSlots(st, en, stepMin);
+            CONFIG.closed = CONFIG.closed || {};
+            CONFIG.closed[d] = arr;
+            await set(ref(db, "config/closed/" + d), arr);
+            renderDay();
+        };
+        openAll.onclick = async () => {
+            const d = dayPick.value; if (!d) return;
+            CONFIG.closed = CONFIG.closed || {};
+            await set(ref(db, "config/closed/" + d), []); // فتح الكل
+            delete CONFIG.closed[d];
+            renderDay();
+        };
+
+        const toMin = t => { const [h, m] = t.split(":").map(Number); return h * 60 + m };
+        const pad = n => String(n).padStart(2, "0");
+        const fromMin = m => `${pad(Math.floor(m / 60) % 24)}:${pad(m % 60)}`;
+        function genSlots(start, end, step) {
+            const out = []; let s = toMin(start), e = toMin(end); const span = e > s ? (e - s) : (1440 - s) + e; const steps = Math.floor(span / step);
+            for (let i = 0; i <= steps; i++) out.push(fromMin((s + i * step) % 1440)); return out;
+        }
+        function renderDay() {
+            const d = dayPick.value; if (!d) { countInfo.textContent = ""; return; }
+            const arr = (CONFIG.closed && CONFIG.closed[d]) || [];
+            countInfo.textContent = `مقفول: ${arr.length} خانة`;
+        }
     </script>
 </body>
 </html>

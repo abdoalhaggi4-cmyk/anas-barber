@@ -14,10 +14,6 @@
             --muted: #8b93a7
         }
 
-        * {
-            box-sizing: border-box
-        }
-
         body {
             margin: 0;
             font-family: "Noto Kufi Arabic","Cairo",sans-serif;
@@ -112,8 +108,7 @@
             border-radius: 14px
         }
 
-            form#bookForm input,
-            form#bookForm select {
+            form#bookForm input, form#bookForm select {
                 width: 100%;
                 padding: 12px;
                 border-radius: 12px;
@@ -188,58 +183,40 @@
     <header>
         <div class="container nav">
             <div class="brand">
-                <img src="assets/logo.png" alt="ANAS BARBER"
-                     style="width:38px;height:38px;border-radius:10px;object-fit:cover">
+                <img src="assets/logo.png" alt="ANAS BARBER" style="width:38px;height:38px;border-radius:10px;object-fit:cover">
                 <h1>ANAS BARBER | الحجز الإلكتروني</h1>
             </div>
-            <button class="btn primary"
-                    onclick="document.getElementById('booking').scrollIntoView({behavior:'smooth'})">
-                احجز الآن
-            </button>
+            <button class="btn primary" onclick="document.getElementById('booking').scrollIntoView({behavior:'smooth'})">احجز الآن</button>
         </div>
     </header>
 
     <section class="container hero-arch">
         <div>
-            <h1 class="hero-title">
-                DIFFERENT <span class="accent">BARBER</span><br>EXPERIENCE
-            </h1>
-            <p style="color:#cfd3dc">
-                احجز موعِدك مع ANAS BARBER بتصميم ذهبي وحركة ناعمة.
-            </p>
+            <h1 class="hero-title">DIFFERENT <span class="accent">BARBER</span><br>EXPERIENCE</h1>
+            <p style="color:#cfd3dc">احجز موعِدك مع ANAS BARBER بتصميم ذهبي وحركة ناعمة.</p>
         </div>
-        <div>
-            <img src="assets/head.png" alt="ANAS BARBER"
-                 style="max-width:100%;border-radius:20px">
-        </div>
+        <div><img src="assets/head.png" alt="ANAS BARBER" style="max-width:100%;border-radius:20px"></div>
     </section>
 
     <section id="booking" class="container">
         <h3>نموذج الحجز</h3>
-
         <form id="bookForm" novalidate>
             <div class="grid2">
-                <!-- اسم الحلاق -->
                 <label style="display:grid;gap:6px">
                     <span>اختيار الحلاق</span>
                     <select id="barber" name="barber" required>
                         <option value="anas">أنس</option>
-                        <!-- لو أضفت حلاقين آخرين زِد الخيارات هنا -->
                     </select>
                 </label>
-
                 <label style="display:grid;gap:6px">
                     <span>اسم العميل</span>
                     <input id="client" name="client" required>
                 </label>
-
                 <label style="display:grid;gap:6px">
                     <span>رقم الهاتف</span>
                     <input id="phone" name="phone" inputmode="tel" required
                            pattern="^[0-9+\\-\\s()]{6,}$" placeholder="+218 xx xxx xxxx">
                 </label>
-
-                <!-- بند الحلاقة -->
                 <label style="display:grid;gap:6px">
                     <span>بند الحلاقة</span>
                     <select id="service" name="service" required>
@@ -264,25 +241,19 @@
                 <input id="date" type="date" required>
             </label>
 
-            <!-- شبكة الأوقات -->
             <div style="margin-top:10px">
                 <span>اختيار الساعة</span>
                 <div id="timeGrid" class="time-grid"></div>
-                <p id="noTimes">لا توجد مواعيد متاحة لهذا اليوم 🙁</p>
-                <!-- الوقت الفعلي يُخزن هنا بصيغة 24 ساعة -->
+                <p id="noTimes">لا توجد مواعيد متاحة لهذا اليوم</p>
                 <input type="hidden" id="time" name="time">
             </div>
 
-            <!-- بند العرسان -->
             <div style="display:grid;gap:8px;margin-top:12px">
                 <label style="display:flex;gap:10px;align-items:center">
-                    <input type="checkbox" id="groom" name="groom"
-                           style="accent-color:#d4af37;width:18px;height:18px">
+                    <input type="checkbox" id="groom" name="groom" style="accent-color:#d4af37;width:18px;height:18px">
                     <span>إضافة باقة العرسان</span>
                 </label>
-                <div style="color:var(--muted);font-size:14px">
-                    ملاحظة: حجز باقة العرسان يجب أن يكون بعد يومين على الأقل من تاريخ اليوم.
-                </div>
+                <div style="color:var(--muted);font-size:14px">ملاحظة: باقة العرسان بعد يومين على الأقل.</div>
             </div>
 
             <div id="groom-packages" style="display:none;margin-top:10px">
@@ -299,19 +270,15 @@
             </div>
 
             <div id="formErrors"></div>
-
-            <button class="btn primary" type="submit"
-                    style="margin-top:10px">
-                إرسال الطلب
-            </button>
+            <button class="btn primary" type="submit" style="margin-top:10px">إرسال الطلب</button>
         </form>
     </section>
 
-    <footer>© 2025 ANAS BARBER | واجهة حجز مرتبطة بقاعدة بيانات Firebase</footer>
+    <footer>© 2025 ANAS BARBER | متصل بـ Firebase</footer>
 
     <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-        import { getDatabase, ref, push, set, get } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
+        import { initializeApp, getApp, getApps } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+        import { getDatabase, ref, onValue, get, push, set, child } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyAz9EtvfCQuyTTgeEcT6F1CjcpCg5JzeSA",
@@ -320,17 +287,23 @@
             projectId: "anas-project-39b6b",
             storageBucket: "anas-project-39b6b.firebasestorage.app",
             messagingSenderId: "975846667862",
-            appId: "1:975846667862:web:427b6ca200b21c9813edf7",
-            measurementId: "G-X0NHN24EVW"
+            appId: "1:975846667862:web:427b6ca200b21c9813edf7"
         };
-
-        const app = initializeApp(firebaseConfig);
+        const app = getApps().length ? getApp() : initializeApp(firebaseConfig);
         const db = getDatabase(app);
 
-        /* توابع الوقت + توليد الخانات */
-        const toMin = t => { const [h, m] = t.split(":").map(Number); return h * 60 + m; };
+        // --- config sync from RTDB ---
+        let CONFIG = { step: 30, defaultHours: { start: "14:00", end: "01:00" }, byWeekday: {}, closed: {}, barbers: { list: ["anas"] } };
+        onValue(ref(db, "config"), (snap) => {
+            if (snap.exists()) { CONFIG = { ...CONFIG, ...snap.val() }; refreshDate(); }
+        });
+
+        // helpers
+        const toMin = t => { const [h, m] = t.split(":").map(Number); return h * 60 + m };
         const pad = n => String(n).padStart(2, "0");
-        const fromMin = m => `${pad(Math.floor(m / 60))}:${pad(m % 60)}`;
+        const fromMin = m => `${pad(Math.floor(m / 60) % 24)}:${pad(m % 60)}`;
+        const to12 = t => { let [h, m] = t.split(":").map(Number); const suf = h >= 12 ? "م" : "ص"; h = ((h + 11) % 12) + 1; return `${pad(h)}:${pad(m)} ${suf}` };
+
         function generateSlots(start, end, step) {
             const out = []; let s = toMin(start), e = toMin(end);
             const span = e > s ? (e - s) : (1440 - s) + e;
@@ -338,132 +311,120 @@
             for (let i = 0; i <= steps; i++) out.push(fromMin((s + i * step) % 1440));
             return out;
         }
-        function to12(t) {
-            let [h, m] = t.split(":").map(Number);
-            const suf = h >= 12 ? "م" : "ص";
-            h = ((h + 11) % 12) + 1;
-            return `${pad(h)}:${pad(m)} ${suf}`;
+        function scheduleFor(dateStr) {
+            const wd = new Date(dateStr).getDay();
+            const w = CONFIG.byWeekday && CONFIG.byWeekday[wd];
+            return { start: (w?.start || CONFIG.defaultHours.start), end: (w?.end || CONFIG.defaultHours.end), step: (CONFIG.step || 30) };
+        }
+        function isClosed(dateStr, t) {
+            const arr = (CONFIG.closed && CONFIG.closed[dateStr]) || [];
+            return Array.isArray(arr) && arr.includes(t);
         }
 
-        const STEP = 30;
-        const WORK_START = "14:00";
-        const WORK_END = "01:00";
-
-        const dateInput = document.getElementById("date");
-        const timeGrid = document.getElementById("timeGrid");
-        const timeInput = document.getElementById("time");
-        const noTimes = document.getElementById("noTimes");
+        // UI refs
         const groomCheckbox = document.getElementById("groom");
         const packageBox = document.getElementById("groom-packages");
+        const timeGrid = document.getElementById("timeGrid");
+        const timeInput = document.getElementById("time");
+        const dateInput = document.getElementById("date");
         const errsBox = document.getElementById("formErrors");
+        const noTimes = document.getElementById("noTimes");
+        const barberSel = document.getElementById("barber");
 
-        /* إظهار/إخفاء الباقات */
-        groomCheckbox.addEventListener("change", () => {
-            packageBox.style.display = groomCheckbox.checked ? "block" : "none";
+        // fill barbers list from config
+        onValue(ref(db, "config/barbers/list"), (s) => {
+            if (s.exists()) {
+                barberSel.innerHTML = "";
+                s.val().forEach(v => {
+                    const opt = document.createElement("option");
+                    opt.value = v; opt.textContent = v;
+                    barberSel.appendChild(opt);
+                });
+            }
         });
 
-        /* شرط تاريخ باقة العرسان: بعد يومين على الأقل */
+        groomCheckbox.addEventListener("change", () => { packageBox.style.display = groomCheckbox.checked ? "block" : "none" });
+
         function groomOk(dateStr) {
             const pick = new Date(dateStr + "T00:00:00");
-            const min = new Date();
-            min.setDate(min.getDate() + 2);
+            const min = new Date(); min.setDate(min.getDate() + 2);
             const limit = new Date(min.getFullYear(), min.getMonth(), min.getDate());
             return pick >= limit;
         }
 
-        /* تعبئة خانات الوقت مع إخفاء المحجوز */
         async function fillTimeOptions(dateStr) {
-            timeGrid.innerHTML = "";
-            timeInput.value = "";
-            noTimes.style.display = "none";
+            timeGrid.innerHTML = ""; timeInput.value = ""; noTimes.style.display = "none";
             if (!dateStr) return;
 
-            const snap = await get(ref(db, "bookings"));
             const booked = [];
+            const snap = await get(ref(db, "bookings"));
             if (snap.exists()) {
                 snap.forEach(c => {
                     const v = c.val();
-                    if (v.date === dateStr) booked.push(v.time);
+                    if (v.date === dateStr && v.status !== "canceled") booked.push(v.time);
                 });
             }
 
-            const slots = generateSlots(WORK_START, WORK_END, STEP);
-            let freeCount = 0;
+            const { start, end, step } = scheduleFor(dateStr);
+            const slots = generateSlots(start, end, step);
+            let free = 0;
 
             slots.forEach(t => {
+                if (isClosed(dateStr, t)) return;
                 const div = document.createElement("div");
                 div.textContent = to12(t);
-                if (booked.includes(t)) {
-                    div.className = "time-slot booked";
-                } else {
+                if (booked.includes(t)) { div.className = "time-slot booked"; }
+                else {
                     div.className = "time-slot";
                     div.onclick = () => {
                         [...timeGrid.children].forEach(x => x.classList.remove("selected"));
-                        div.classList.add("selected");
-                        timeInput.value = t;
+                        div.classList.add("selected"); timeInput.value = t;
                     };
-                    freeCount++;
+                    free++;
                 }
                 timeGrid.appendChild(div);
             });
-
-            if (freeCount === 0) noTimes.style.display = "block";
+            if (free === 0) noTimes.style.display = "block";
         }
 
-        /* تهيئة التاريخ الافتراضي */
+        function refreshDate() { if (dateInput.value) fillTimeOptions(dateInput.value); }
+
         const today = new Date().toISOString().slice(0, 10);
-        dateInput.min = today;
-        dateInput.value = today;
-        fillTimeOptions(today);
+        dateInput.min = today; dateInput.value = today; await fillTimeOptions(today);
         dateInput.addEventListener("change", e => fillTimeOptions(e.target.value));
 
-        /* إرسال الحجز */
         document.getElementById("bookForm").addEventListener("submit", async e => {
-            e.preventDefault();
-            errsBox.style.display = "none"; errsBox.innerHTML = "";
-
+            e.preventDefault(); errsBox.style.display = "none"; errsBox.innerHTML = "";
             const name = document.getElementById("client").value.trim();
             const phone = document.getElementById("phone").value.trim();
-            const barber = document.getElementById("barber").value;
+            const barber = barberSel.value;
             const service = document.getElementById("service").value;
-            const date = document.getElementById("date").value;
-            const time = document.getElementById("time").value;
+            const date = dateInput.value;
+            const time = timeInput.value;
             const groom = groomCheckbox.checked;
             const packageType = groom ? document.getElementById("package").value : "";
 
             const msgs = [];
+            if (!name || !phone || !barber || !service || !date || !time) msgs.push("يرجى تعبئة جميع الحقول واختيار وقت.");
+            if (groom && !packageType) msgs.push("اختر نوع باقة العرسان.");
+            if (groom && !groomOk(date)) msgs.push("باقة العرسان بعد يومين على الأقل.");
+            if (!e.target.checkValidity()) msgs.push("تحقق من صيغة رقم الهاتف.");
 
-            if (!name || !phone || !barber || !service || !date || !time)
-                msgs.push("يرجى تعبئة جميع الحقول واختيار وقت متاح.");
+            if (msgs.length) { errsBox.innerHTML = msgs.map(m => "• " + m).join("<br>"); errsBox.style.display = "block"; return; }
 
-            if (groom && !packageType)
-                msgs.push("اختر نوع باقة العرسان.");
+            const newRef = push(ref(db, "bookings"));
+            const record = { name, phone, barber, service, date, time, groom, packageType, status: "pending", createdAt: Date.now() };
+            await set(newRef, record);
 
-            if (groom && !groomOk(date))
-                msgs.push("باقة العرسان يجب أن تكون بعد يومين على الأقل من تاريخ اليوم.");
+            // نداء Cloud Function لإرسال رسالة شكر + تنبيه الحلاق
+            try {
+                await fetch("https://us-central1-anas-project-39b6b.cloudfunctions.net/sendWhatsAppOnNewBooking", {
+                    method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id: newRef.key, ...record })
+                });
+            } catch (_) { }
 
-            // تحقق من صلاحية النموذج نفسه (رقم الهاتف إلخ)
-            if (!e.target.checkValidity())
-                msgs.push("تحقق من صيغة رقم الهاتف والحقول المطلوبة.");
-
-            if (msgs.length) {
-                errsBox.innerHTML = msgs.map(m => "• " + m).join("<br>");
-                errsBox.style.display = "block";
-                return;
-            }
-
-            const bookingRef = ref(db, "bookings/");
-            const newRef = push(bookingRef);
-            await set(newRef, {
-                name, phone, barber, service, date, time,
-                groom, packageType
-            });
-
-            alert("✅ تم تأكيد الحجز بنجاح");
-            e.target.reset();
-            groomCheckbox.checked = false;
-            packageBox.style.display = "none";
-            fillTimeOptions(date);
+            alert("تم استلام الطلب. ستصلك رسالة تأكيد بعد المراجعة.");
+            e.target.reset(); groomCheckbox.checked = false; packageBox.style.display = "none"; fillTimeOptions(date);
         });
     </script>
 </body>
