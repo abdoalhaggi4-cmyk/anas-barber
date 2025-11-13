@@ -1,21 +1,10 @@
 ﻿// auth.js
-
-// 1) استيراد Firebase SDK من CDN
+import { initializeApp, getApp, getApps } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
 import {
-    initializeApp,
-    getApp,
-    getApps
-} from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-
-import {
-    getAuth,
-    createUserWithEmailAndPassword,
-    signInWithEmailAndPassword,
-    onAuthStateChanged,
-    signOut
+    getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword,
+    onAuthStateChanged, signOut, GoogleAuthProvider, signInWithPopup
 } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
 
-// 2) إعدادات مشروعك (من Firebase)
 const firebaseConfig = {
     apiKey: "AIzaSyAz9EtvfCQuyTTgeEcT6F1CjcpCg5JzeSA",
     authDomain: "anas-project-39b6b.firebaseapp.com",
@@ -27,34 +16,24 @@ const firebaseConfig = {
     measurementId: "G-X0NHN24EVW"
 };
 
-// 3) تهيئة التطبيق مرة واحدة فقط
 let app;
-if (!getApps().length) {
-    app = initializeApp(firebaseConfig);
-} else {
-    app = getApp();
-}
+if (!getApps().length) app = initializeApp(firebaseConfig);
+else app = getApp();
 
 const auth = getAuth(app);
 
-// 4) تحديد الصفحة الحالية
-const path = window.location.pathname.toLowerCase();
-const isLoginPage = path.endsWith("login.html") || path.endsWith("/") || path.endsWith("\\");
-const isAdminPage = path.endsWith("admin.html");
+// تحديد الصفحة
+const path = (window.location.pathname || "").toLowerCase();
+const isLogin = path.endsWith("login.html") || path.endsWith("/") || path.endsWith("\\");
+const isAdmin = path.endsWith("admin.html");
 
-// 5) مراقبة حالة تسجيل الدخول
+// مراقبة الحالة
 onAuthStateChanged(auth, (user) => {
-    if (isAdminPage && !user) {
-        // لا يوجد مستخدم -> رجوع لصفحة الدخول
-        window.location.href = "login.html";
-    }
-    if (isLoginPage && user) {
-        // المستخدم مسجل دخول وفتح login -> تحويل للإدارة
-        window.location.href = "admin.html";
-    }
+    if (isAdmin && !user) window.location.href = "login.html";
+    if (isLogin && user) window.location.href = "admin.html";
 });
 
-// ===== تسجيل مشرف جديد =====
+// إنشاء مشرف
 const registerForm = document.getElementById("registerForm");
 if (registerForm) {
     registerForm.addEventListener("submit", async (e) => {
@@ -62,26 +41,19 @@ if (registerForm) {
         const email = document.getElementById("regEmail").value.trim();
         const password = document.getElementById("regPassword").value.trim();
         const msgEl = document.getElementById("regMsg");
-
         msgEl.textContent = "";
 
-        if (!email || !password) {
-            msgEl.textContent = "املأ البريد وكلمة المرور";
-            return;
-        }
-
+        if (!email || !password) { msgEl.textContent = "املأ البريد وكلمة المرور"; return; }
         try {
-            const cred = await createUserWithEmailAndPassword(auth, email, password);
+            await createUserWithEmailAndPassword(auth, email, password);
             msgEl.textContent = "تم إنشاء الحساب بنجاح";
-            console.log("REGISTER OK", cred.user.uid);
         } catch (err) {
-            console.log("REGISTER ERROR", err);
             msgEl.textContent = "خطأ في التسجيل: " + (err.code || err.message);
         }
     });
 }
 
-// ===== تسجيل الدخول =====
+// دخول بالبريد/الرمز
 const loginForm = document.getElementById("loginForm");
 if (loginForm) {
     loginForm.addEventListener("submit", async (e) => {
@@ -89,31 +61,34 @@ if (loginForm) {
         const email = document.getElementById("email").value.trim();
         const password = document.getElementById("password").value.trim();
         const errEl = document.getElementById("loginError");
-
         errEl.textContent = "";
-
-        if (!email || !password) {
-            errEl.textContent = "املأ بيانات الدخول";
-            return;
-        }
-
+        if (!email || !password) { errEl.textContent = "املأ بيانات الدخول"; return; }
         try {
-            const cred = await signInWithEmailAndPassword(auth, email, password);
-            console.log("LOGIN OK", cred.user.uid);
+            await signInWithEmailAndPassword(auth, email, password);
             window.location.href = "admin.html";
         } catch (err) {
-            console.log("LOGIN ERROR", err);
-            errEl.textContent = "بيانات الدخول غير صحيحة أو هناك خطأ في الاتصال";
+            errEl.textContent = "بيانات الدخول غير صحيحة أو مشكلة اتصال";
         }
     });
+
+    // تسجيل عبر Google
+    const googleBtn = document.getElementById("googleBtn");
+    if (googleBtn) {
+        googleBtn.addEventListener("click", async () => {
+            try {
+                const provider = new GoogleAuthProvider();
+                await signInWithPopup(auth, provider);
+                window.location.href = "admin.html";
+            } catch (err) {
+                const errEl = document.getElementById("loginError");
+                if (errEl) errEl.textContent = "تعذّر تسجيل الدخول عبر Google";
+            }
+        });
+    }
 }
 
-// ===== تسجيل الخروج (يُستدعى من admin.html) =====
+// للخروج تُستدعى من admin.html
 window.logout = async function () {
-    try {
-        await signOut(auth);
-        window.location.href = "login.html";
-    } catch (err) {
-        console.log("LOGOUT ERROR", err);
-    }
+    try { await signOut(auth); window.location.href = "login.html"; }
+    catch (err) { console.log("LOGOUT ERROR", err); }
 };

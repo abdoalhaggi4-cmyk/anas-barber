@@ -5,23 +5,38 @@
     <meta name="viewport" content="width=device-width,initial-scale=1" />
     <title>لوحة إدارة | ANAS BARBER</title>
     <style>
+        :root {
+            --bg: #0f1115;
+            --text: #e7ebf3;
+            --brand: #d4af37;
+            --brand2: #f5d76e;
+            --stroke: #2a3241;
+            --muted: #8b93a7
+        }
+
         body {
             margin: 0;
             font-family: "Noto Kufi Arabic","Cairo",sans-serif;
             background: #0f1115;
-            color: #e7ebf3
+            color: var(--text)
         }
 
         .wrap {
-            width: min(1000px,92vw);
-            margin: 24px auto;
+            width: min(1000px,94vw);
+            margin: 20px auto;
             display: grid;
             gap: 16px
         }
 
+        .row {
+            display: flex;
+            gap: 10px;
+            align-items: center
+        }
+
         .card {
             background: #0e131b;
-            border: 1px solid #2a3241;
+            border: 1px solid var(--stroke);
             border-radius: 14px;
             padding: 16px;
             display: grid;
@@ -40,40 +55,22 @@
         input, select {
             background: #0f131b;
             color: #e7ebf3;
-            border: 1px solid #2a3241;
+            border: 1px solid var(--stroke);
             border-radius: 10px;
             padding: 10px
-        }
-
-        .grid2 {
-            display: grid;
-            gap: 12px;
-            grid-template-columns: repeat(2,minmax(0,1fr))
-        }
-
-        .row {
-            display: flex;
-            gap: 10px;
-            align-items: center;
-            flex-wrap: wrap
-        }
-
-        .muted {
-            color: #8b93a7;
-            font-size: 13px
         }
 
         button {
             cursor: pointer;
             border-radius: 10px;
-            border: 1px solid #2a3241;
+            border: 1px solid var(--stroke);
             background: #10131a;
             color: #e7ebf3;
-            padding: 10px 14px
+            padding: 8px 12px
         }
 
         .primary {
-            background: linear-gradient(135deg,#d4af37,#f5d76e);
+            background: linear-gradient(135deg,var(--brand),var(--brand2));
             color: #0b0d11;
             border: none
         }
@@ -83,6 +80,70 @@
             border-color: #773333
         }
 
+        .ok {
+            color: #9be49b
+        }
+
+        .muted {
+            color: var(--muted);
+            font-size: 13px
+        }
+
+        .grid2 {
+            display: grid;
+            gap: 12px;
+            grid-template-columns: repeat(2,minmax(0,1fr))
+        }
+
+        .slot-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill,minmax(84px,1fr));
+            gap: 8px
+        }
+
+        .slot {
+            border: 1px solid var(--stroke);
+            border-radius: 10px;
+            padding: 8px 10px;
+            text-align: center;
+            user-select: none;
+            font-size: 13px
+        }
+
+            .slot.open {
+                background: #0f131b
+            }
+
+            .slot.closed {
+                background: #3a1f1f;
+                color: #ffb4b4;
+                border-color: #663c3c
+            }
+
+        .legend {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+            font-size: 13px;
+            color: var(--muted)
+        }
+
+        .box {
+            width: 14px;
+            height: 14px;
+            border-radius: 4px;
+            border: 1px solid var(--stroke)
+        }
+
+            .box.open {
+                background: #0f131b
+            }
+
+            .box.closed {
+                background: #3a1f1f;
+                border-color: #663c3c
+            }
+
         table {
             width: 100%;
             border-collapse: collapse;
@@ -91,7 +152,7 @@
 
         th, td {
             padding: 8px 10px;
-            border-bottom: 1px solid #2a3241;
+            border-bottom: 1px solid var(--stroke);
             text-align: right
         }
 
@@ -108,55 +169,61 @@
             background: #0d1017
         }
 
-        .ok {
-            color: #9be49b
-        }
-
-        .chip {
+        .pill {
             padding: 2px 8px;
             border-radius: 999px;
             font-size: 12px
         }
 
-        .pending {
-            background: #3a2f13;
-            color: #f7e39a
-        }
+            .pill.pending {
+                background: #4e4a2a
+            }
 
-        .confirmed {
-            background: #1f3a20;
-            color: #9be49b
-        }
+            .pill.confirmed {
+                background: #284e2a
+            }
 
-        .canceled {
-            background: #402020;
-            color: #ffb4b4
+            .pill.rejected {
+                background: #5a2222
+            }
+
+        .toast {
+            position: fixed;
+            bottom: 16px;
+            left: 16px;
+            background: #0e131b;
+            border: 1px solid var(--stroke);
+            padding: 10px 12px;
+            border-radius: 10px;
+            font-size: 13px;
+            z-index: 50
         }
     </style>
 </head>
 <body>
     <div class="wrap">
 
+        <!-- رأس -->
         <div class="card">
             <div class="row" style="justify-content:space-between">
-                <h2>الحجوزات المسجلة</h2>
+                <h2>لوحة إدارة ANAS BARBER</h2>
                 <div class="row">
+                    <a class="button" href="index.html" style="text-decoration:none"><button>العودة للموقع</button></a>
                     <button class="primary" onclick="logout()">تسجيل الخروج</button>
                 </div>
             </div>
-            <div class="row">
-                <label>تصفية حسب التاريخ <input type="date" id="fDate"></label>
-                <label>
-                    الحالة
-                    <select id="fStatus">
-                        <option value="">الكل</option>
-                        <option value="pending">قيد المراجعة</option>
-                        <option value="confirmed">مؤكد</option>
-                        <option value="canceled">ملغي</option>
-                    </select>
-                </label>
-                <button id="clearFilters">إزالة التصفية</button>
-                <span id="bkState" class="muted"></span>
+            <div class="muted">مزامنة مباشرة مع Firebase. أي تعديل هنا ينعكس في صفحة الحجز فورًا.</div>
+        </div>
+
+        <!-- جدول الحجوزات -->
+        <div class="card">
+            <h2>الحجوزات</h2>
+            <div class="row" style="justify-content:space-between">
+                <span id="bkState" class="muted">جاري التحميل...</span>
+                <div class="row">
+                    <label class="row">تنبيه قبل ساعة<input id="reminderToggle" type="checkbox" style="margin-inline-start:8px"></label>
+                    <button id="reloadBk" class="primary">تحديث</button>
+                </div>
             </div>
             <div style="overflow-x:auto">
                 <table>
@@ -164,38 +231,36 @@
                         <tr>
                             <th>الاسم</th>
                             <th>الهاتف</th>
-                            <th>الحلاق</th>
                             <th>الخدمة</th>
                             <th>التاريخ</th>
                             <th>الوقت</th>
                             <th>الحالة</th>
-                            <th>إجراءات</th>
+                            <th>الإجراء</th>
                         </tr>
                     </thead>
-                    <tbody id="bkTableBody"><tr><td colspan="8" class="muted">لا توجد حجوزات</td></tr></tbody>
+                    <tbody id="bkTableBody"><tr><td colspan="7" class="muted">لا توجد حجوزات</td></tr></tbody>
                 </table>
             </div>
         </div>
 
+        <!-- إعدادات عامة -->
         <div class="card">
-            <h2>الإعدادات العامة (مزامنة مع القاعدة)</h2>
+            <h2>الإعدادات العامة (مزامنة مع الزبون)</h2>
             <div class="grid2">
-                <label>من <input id="defStart" type="time"></label>
-                <label>إلى <input id="defEnd" type="time"></label>
-                <label>
-                    فاصل الدقائق
-                    <select id="step"><option>15</option><option selected>30</option><option>60</option></select>
-                </label>
-                <label>
-                    أرقام واتساب الحلاق (مفصولة بفواصل)
-                    <input id="barberPhones" placeholder="+2189..., +2189...">
-                </label>
+                <label><span>من</span><input id="defStart" type="time" value="14:00"></label>
+                <label><span>إلى</span><input id="defEnd" type="time" value="01:00"></label>
+                <label class="row"><input id="step15" type="checkbox"> <span>فاصل 15 دقيقة</span></label>
+                <label class="row"><input id="step30" type="checkbox" checked> <span>فاصل 30 دقيقة</span></label>
             </div>
+            <div class="muted">يتم حفظ: أوقات العمل، الفاصل، الاستثناءات الأسبوعية، ومخارج اليوم المقفل في قاعدة البيانات.</div>
+        </div>
 
-            <h3>استثناءات الأسبوع</h3>
+        <!-- استثناءات أسبوعية -->
+        <div class="card">
+            <h2>استثناءات حسب يوم الأسبوع</h2>
             <div class="grid2">
                 <label>
-                    اليوم
+                    <span>اليوم</span>
                     <select id="wdDay">
                         <option value="0">الأحد</option>
                         <option value="1">الاثنين</option>
@@ -206,202 +271,318 @@
                         <option value="6">السبت</option>
                     </select>
                 </label>
-                <label>من <input id="wdStart" type="time" value="16:00"></label>
-                <label>إلى <input id="wdEnd" type="time" value="02:00"></label>
+                <label><span>من</span><input id="wdStart" type="time" value="16:00"></label>
+                <label><span>إلى</span><input id="wdEnd" type="time" value="02:00"></label>
             </div>
             <div class="row">
-                <button id="addWd" class="primary">حفظ/تحديث اليوم</button>
-                <button id="clearWd" class="warn">حذف اليوم</button>
+                <button id="addWd" class="primary">حفظ/تحديث هذا اليوم</button>
+                <button id="clearWd" class="warn">حذف هذا اليوم</button>
             </div>
             <div id="wdList" class="muted"></div>
+        </div>
 
-            <h3>إغلاق يوم محدد</h3>
-            <div class="row">
-                <label>التاريخ <input id="dayPick" type="date"></label>
-                <button id="closeAll" class="warn">قفل كل الساعات</button>
-                <button id="openAll" class="primary">فتح كل الساعات</button>
+        <!-- إدارة يوم محدد (قفل/فتح خانات) -->
+        <div class="card" id="perDayCard">
+            <h2>إدارة أوقات يوم محدد</h2>
+            <div class="row" style="flex-wrap:wrap;gap:10px">
+                <label class="row" style="gap:8px"><span>اختر التاريخ</span><input id="dayPick" type="date"></label>
+                <button id="openAll" class="primary">فتح الكل</button>
+                <button id="closeAll" class="warn">قفل الكل</button>
                 <span id="countInfo" class="muted"></span>
             </div>
+            <div class="legend">
+                <div class="box open"></div><span>متاح</span>
+                <div class="box closed"></div><span>مقفول</span>
+            </div>
+            <div id="slotGrid" class="slot-grid"></div>
+        </div>
 
+        <!-- حفظ -->
+        <div class="card">
             <div class="row">
-                <button id="saveConfig" class="primary">حفظ الإعدادات في القاعدة</button>
+                <button id="saveAll" class="primary">حفظ الإعدادات</button>
                 <span id="state" class="ok"></span>
             </div>
-            <div class="muted">تقرأ صفحة الحجز هذه الإعدادات لحظيًا.</div>
+            <div class="muted">تُحفظ الإعدادات في المسار <code>/config</code> بقاعدة البيانات.</div>
         </div>
 
     </div>
 
+    <div id="toast" class="toast" style="display:none"></div>
+
+    <!-- حماية الصفحة + تهيئة Firebase -->
     <script type="module" src="./auth.js"></script>
+
+    <!-- سكربت الإدارة -->
     <script type="module">
         import { getApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-        import { getDatabase, ref, onValue, set, get, update, child } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
+        import { getDatabase, ref, get, set, update, onValue } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
 
-        const db = getDatabase(getApp());
+        const app = getApp();
+        const db = getDatabase(app);
 
-        // ---------- حجوزات لحظية + إجراءات ----------
-        const tbody = document.getElementById("bkTableBody");
-        const fDate = document.getElementById("fDate");
-        const fStatus = document.getElementById("fStatus");
-        const clearFilters = document.getElementById("clearFilters");
-        const bkState = document.getElementById("bkState");
+        const $ = s => document.querySelector(s);
+        const toastEl = $("#toast");
+        function toast(msg, ms = 3000) { toastEl.innerHTML = msg; toastEl.style.display = "block"; setTimeout(() => toastEl.style.display = "none", ms); }
 
-        let ALL = [];
-        onValue(ref(db, "bookings"), (snap) => {
-            ALL = [];
+        // عناصر الإعدادات
+        const defStart = $("#defStart"), defEnd = $("#defEnd"), step15 = $("#step15"), step30 = $("#step30");
+        const wdDay = $("#wdDay"), wdStart = $("#wdStart"), wdEnd = $("#wdEnd"), wdList = $("#wdList");
+        const dayPick = $("#dayPick"), slotGrid = $("#slotGrid"), countInfo = $("#countInfo");
+        const state = $("#state");
+
+        // تكوين افتراضي
+        let CFG = { step: 30, defaultHours: { start: "14:00", end: "01:00" }, byWeekday: {}, closed: {} };
+
+        // تحميل مباشر من /config
+        onValue(ref(db, "config"), snap => {
             if (snap.exists()) {
-                snap.forEach(ch => { const v = ch.val(); ALL.push({ id: ch.key, ...v }); });
+                CFG = { ...CFG, ...snap.val() };
             }
-            render();
+            // تحديث واجهة الإعدادات
+            defStart.value = CFG.defaultHours?.start || "14:00";
+            defEnd.value = CFG.defaultHours?.end || "01:00";
+            step15.checked = (CFG.step === 15);
+            step30.checked = (CFG.step !== 15);
+
+            renderWDList();
+            if (dayPick.value) renderDay(dayPick.value);
         });
 
-        clearFilters.onclick = () => { fDate.value = ""; fStatus.value = ""; render(); }
+        function renderWDList() {
+            const names = ["الأحد", "الاثنين", "الثلاثاء", "الأربعاء", "الخميس", "الجمعة", "السبت"];
+            wdList.innerHTML = Object.keys(CFG.byWeekday || {}).length
+                ? Object.entries(CFG.byWeekday).map(([d, v]) => `• ${names[+d]}: ${v.start}-${v.end}`).join("<br>")
+                : "لا استثناءات أسبوعية";
+        }
 
-        function render() {
-            const t = fDate.value;
-            const s = fStatus.value;
-            let list = ALL.slice();
-            if (t) list = list.filter(x => x.date === t);
-            if (s) list = list.filter(x => x.status === s);
+        function pad(n) { return String(n).padStart(2, "0") }
+        function toMin(t) { const [h, m] = t.split(":").map(Number); return h * 60 + m }
+        function fromMin(m) { m = (m + 1440) % 1440; return `${pad(Math.floor(m / 60))}:${pad(m % 60)}` }
+        function to12(t) { let [h, m] = t.split(":").map(Number); const s = h >= 12 ? "م" : "ص"; h = ((h + 11) % 12) + 1; return `${pad(h)}:${pad(m)} ${s}` }
 
-            list.sort((a, b) => ((a.date || "") + (a.time || "")).localeCompare((b.date || "") + (b.time || "")));
+        function scheduleFor(dateStr) {
+            const wd = new Date(dateStr).getDay();
+            const w = CFG.byWeekday?.[wd];
+            return { start: (w?.start || CFG.defaultHours.start), end: (w?.end || CFG.defaultHours.end), step: (CFG.step || 30) };
+        }
+        function generateSlots(st, en, step) {
+            const out = []; let s = toMin(st), e = toMin(en);
+            const span = (e > s) ? (e - s) : (1440 - s) + e;
+            const steps = Math.floor(span / step);
+            for (let i = 0; i <= steps; i++) out.push(fromMin(s + i * step));
+            return out;
+        }
+
+        function renderDay(dateStr) {
+            if (!dateStr) { slotGrid.innerHTML = ""; countInfo.textContent = ""; return; }
+            const sch = scheduleFor(dateStr);
+            const slots = generateSlots(sch.start, sch.end, sch.step);
+            const closed = new Set(CFG.closed?.[dateStr] || []);
+            slotGrid.innerHTML = "";
+            let closedCount = 0;
+            slots.forEach(t => {
+                const div = document.createElement("div");
+                const isClosed = closed.has(t); if (isClosed) closedCount++;
+                div.className = "slot " + (isClosed ? "closed" : "open");
+                div.textContent = to12(t); div.dataset.t = t;
+                slotGrid.appendChild(div);
+            });
+            countInfo.textContent = `المتاح: ${slots.length - closedCount} | المقفول: ${closedCount}`;
+        }
+
+        slotGrid.addEventListener("click", e => {
+            const div = e.target.closest(".slot"); if (!div) return;
+            const t = div.dataset.t; const d = dayPick.value; if (!d) return;
+            const arr = CFG.closed[d] || (CFG.closed[d] = []);
+            const i = arr.indexOf(t); if (i === -1) arr.push(t); else arr.splice(i, 1);
+            set(ref(db, "config/closed/" + d), arr.length ? arr : null); // null يحذف العقدة
+            toast("تم تحديث خانات اليوم");
+            renderDay(d);
+        });
+
+        $("#openAll").onclick = () => {
+            const d = dayPick.value; if (!d) return;
+            set(ref(db, "config/closed/" + d), null);
+            toast("تم فتح جميع خانات اليوم");
+            renderDay(d);
+        };
+        $("#closeAll").onclick = () => {
+            const d = dayPick.value; if (!d) return;
+            const { start, end, step } = scheduleFor(d);
+            const all = generateSlots(start, end, step);
+            set(ref(db, "config/closed/" + d), all);
+            toast("تم قفل جميع خانات اليوم");
+            renderDay(d);
+        };
+
+        $("#addWd").onclick = async () => {
+            const d = wdDay.value;
+            const obj = { start: wdStart.value, end: wdEnd.value };
+            await update(ref(db, "config/byWeekday"), { [d]: obj });
+            toast("تم حفظ استثناء اليوم");
+        };
+        $("#clearWd").onclick = async () => {
+            const d = wdDay.value;
+            await update(ref(db, "config/byWeekday"), { [d]: null });
+            toast("تم حذف استثناء اليوم");
+        };
+
+        function applyStep(step) {
+            step15.checked = (step === 15); step30.checked = (step !== 15);
+            update(ref(db, "config"), { step });
+            toast("تم ضبط الفاصل الزمني");
+            if (dayPick.value) renderDay(dayPick.value);
+        }
+        step15.addEventListener("change", e => { if (e.target.checked) applyStep(15); });
+        step30.addEventListener("change", e => { if (e.target.checked) applyStep(30); });
+
+        $("#saveAll").onclick = async () => {
+            await update(ref(db, "config"), {
+                defaultHours: { start: defStart.value, end: defEnd.value }
+            });
+            state.textContent = "تم الحفظ";
+            setTimeout(() => state.textContent = "", 2000);
+            if (dayPick.value) renderDay(dayPick.value);
+        };
+
+        // تهيئة تاريخ اليوم
+        const isoToday = new Date().toISOString().slice(0, 10);
+        dayPick.value = isoToday; renderDay(isoToday);
+        dayPick.addEventListener("change", () => renderDay(dayPick.value));
+
+        // ------------ جدول الحجوزات + أزرار واتساب -------------
+        const tbody = $("#bkTableBody"), bkState = $("#bkState"), reload = $("#reloadBk"), reminderToggle = $("#reminderToggle");
+
+        const serviceNames = {
+            hair: "حلاقة شعر", face: "حلاقة وجه", hair_face: "حلاقة شعر ووجه", kids: "حلاقة أطفال",
+            keratin: "كيرياتين", protein: "بروتين", botox: "بوتكس", collagen: "كولاجين",
+            skin_normal: "تنظيف بشرة عادي", skin_deep: "تنظيف بشرة عميق", hydrafacial: "Hydrafacial",
+            vip_shave: "حلاقة VIP", color: "صباغة"
+        };
+
+        function waLink(phone, text) {
+            const p = (phone || "").replace(/[^\d]/g, "");
+            return `https://wa.me/${p}?text=${encodeURIComponent(text)}`;
+        }
+
+        function renderBookings(list) {
             tbody.innerHTML = "";
-            if (!list.length) { tbody.innerHTML = '<tr><td colspan="8" class="muted">لا توجد حجوزات</td></tr>'; bkState.textContent = ""; return; }
-
+            if (!list.length) {
+                tbody.innerHTML = '<tr><td colspan="7" class="muted">لا توجد حجوزات</td></tr>';
+                bkState.textContent = ""; return;
+            }
+            list.sort((a, b) => ((a.date || "") + (a.time || "")).localeCompare((b.date || "") + (b.time || "")));
             list.forEach(b => {
+                const id = b._id;
                 const tr = document.createElement("tr");
-                const chipClass = b.status || "pending";
+                const s = serviceNames[b.service] || b.service || "";
+                const pill = `<span class="pill ${b.status || 'pending'}">${b.status || 'pending'}</span>`;
                 tr.innerHTML = `
             <td>${b.name || ""}</td>
             <td>${b.phone || ""}</td>
-            <td>${b.barber || ""}</td>
-            <td>${b.service || ""}</td>
+            <td>${s}</td>
             <td>${b.date || ""}</td>
             <td>${b.time || ""}</td>
-            <td><span class="chip ${chipClass}">${statusName(b.status)}</span></td>
-            <td class="row">
-              <button data-id="${b.id}" data-act="confirm" class="primary">تأكيد</button>
-              <button data-id="${b.id}" data-act="cancel" class="warn">إلغاء</button>
+            <td>${pill}</td>
+            <td style="white-space:nowrap">
+              <button class="primary" data-ok="${id}">تأكيد</button>
+              <button class="warn" data-no="${id}">رفض</button>
             </td>`;
                 tbody.appendChild(tr);
             });
             bkState.textContent = "عدد الحجوزات: " + list.length;
         }
 
-        function statusName(s) {
-            if (s === "confirmed") return "مؤكد";
-            if (s === "canceled") return "ملغي";
-            return "قيد المراجعة";
+        function collectBookings(snap, out, path = "") {
+            snap.forEach(ch => {
+                const val = ch.val();
+                const id = path ? `${path}/${ch.key}` : ch.key;
+                if (val && typeof val === "object" && (val.date || val.time || val.name)) {
+                    out.push({ ...val, _id: id });
+                } else if (ch.hasChildren()) {
+                    collectBookings(ch, out, id);
+                }
+            });
         }
 
+        async function loadAllBookings() {
+            const snap = await get(ref(db, "bookings"));
+            const list = []; if (snap.exists()) collectBookings(snap, list);
+            // أظهر المستقبل فقط
+            const today = new Date().toISOString().slice(0, 10);
+            const future = list.filter(b => !b.date || b.date >= today);
+            renderBookings(future);
+        }
+
+        // تفعيل الأزرار
         tbody.addEventListener("click", async (e) => {
-            const btn = e.target.closest("button"); if (!btn) return;
-            const id = btn.dataset.id; const act = btn.dataset.act;
-            const newStatus = act === "confirm" ? "confirmed" : "canceled";
-            await update(ref(db, "bookings/" + id), { status: newStatus });
+            const okId = e.target.getAttribute("data-ok");
+            const noId = e.target.getAttribute("data-no");
+            if (okId) {
+                const row = [...tbody.querySelectorAll("[data-ok]")].find(x => x.getAttribute("data-ok") == okId).closest("tr");
+                const cells = row.querySelectorAll("td");
+                const name = cells[0].textContent.trim();
+                const phone = cells[1].textContent.trim();
+                const service = cells[2].textContent.trim();
+                const date = cells[3].textContent.trim();
+                const time = cells[4].textContent.trim();
 
-            // نداء Cloud Function لإرسال واتساب حسب الحالة
-            try {
-                await fetch("https://us-central1-anas-project-39b6b.cloudfunctions.net/sendWhatsAppOnStatusChange", {
-                    method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id, status: newStatus })
-                });
-            } catch (_) { }
+                await update(ref(db, "bookings/" + okId), { status: "confirmed" });
+
+                const msg = `تم تأكيد موعدك في ANAS BARBER ✅
+الاسم: ${name}
+الخدمة: ${service}
+التاريخ: ${date}
+الوقت: ${time}
+نراك في الموعد بإذن الله.`;
+                window.open(waLink(phone, msg), "_blank");
+                toast("تم تأكيد الحجز وإعداد رسالة واتساب جاهزة");
+                loadAllBookings();
+            }
+            if (noId) {
+                const row = [...tbody.querySelectorAll("[data-no]")].find(x => x.getAttribute("data-no") == noId).closest("tr");
+                const cells = row.querySelectorAll("td");
+                const name = cells[0].textContent.trim();
+                const phone = cells[1].textContent.trim();
+                const date = cells[3].textContent.trim();
+                const time = cells[4].textContent.trim();
+
+                await update(ref(db, "bookings/" + noId), { status: "rejected" });
+
+                const msg = `نعتذر ${name}،
+لم نتمكن من تأكيد موعد ${date} الساعة ${time}.
+يرجى اختيار وقت آخر وسنخدمك بكل سرور.`;
+                window.open(waLink(phone, msg), "_blank");
+                toast("تم رفض الحجز وإعداد رسالة واتساب جاهزة");
+                loadAllBookings();
+            }
         });
 
-        // ---------- إعدادات متزامنة ----------
-        const defStart = document.getElementById("defStart");
-        const defEnd = document.getElementById("defEnd");
-        const step = document.getElementById("step");
-        const barberPhones = document.getElementById("barberPhones");
-        const wdDay = document.getElementById("wdDay");
-        const wdStart = document.getElementById("wdStart");
-        const wdEnd = document.getElementById("wdEnd");
-        const addWd = document.getElementById("addWd");
-        const clearWd = document.getElementById("clearWd");
-        const wdList = document.getElementById("wdList");
-        const dayPick = document.getElementById("dayPick");
-        const closeAll = document.getElementById("closeAll");
-        const openAll = document.getElementById("openAll");
-        const countInfo = document.getElementById("countInfo");
-        const stateEl = document.getElementById("state");
-        const saveConfig = document.getElementById("saveConfig");
+        // تذكير داخلي قبل الموعد بساعة (للحلاق داخل لوحة الإدارة)
+        let reminderOn = false;
+        reminderToggle.addEventListener("change", () => { reminderOn = reminderToggle.checked; });
+        setInterval(async () => {
+            if (!reminderOn) return;
+            const snap = await get(ref(db, "bookings"));
+            if (!snap.exists()) return;
+            const now = Date.now(), from = now + 45 * 60 * 1000, to = now + 75 * 60 * 1000;
+            const due = [];
+            snap.forEach(c => {
+                const b = c.val(); if (b?.status !== "confirmed" || !b.date || !b.time || !b.phone) return;
+                const [hh, mm] = b.time.split(":").map(Number);
+                const ts = new Date(`${b.date}T${String(hh).padStart(2, "0")}:${String(mm).padStart(2, "0")}:00`).getTime();
+                if (ts >= from && ts <= to) due.push(b);
+            });
+            if (due.length) {
+                const names = due.map(x => `${x.name} (${x.time})`).join(" • ");
+                toast(`تذكير: مواعيد بعد ~ساعة: ${names}`, 8000);
+                // يمكنك الضغط على الحجز من الجدول ثم زر "تأكيد" لفتح رسالة واتساب مخصّصة (أو تعديلها يدوياً لرسالة تذكير)
+            }
+        }, 60 * 1000); // فحص كل دقيقة
 
-        let CONFIG = { step: 30, defaultHours: { start: "14:00", end: "01:00" }, byWeekday: {}, closed: {}, barbers: { list: ["anas"], phones: [] } };
-        onValue(ref(db, "config"), (s) => {
-            if (s.exists()) { CONFIG = { ...CONFIG, ...s.val() }; hydrate(); renderWdList(); renderDay(); }
-        });
-
-        function hydrate() {
-            defStart.value = CONFIG.defaultHours.start || "14:00";
-            defEnd.value = CONFIG.defaultHours.end || "01:00";
-            step.value = String(CONFIG.step || 30);
-            barberPhones.value = (CONFIG.barbers?.phones || []).join(", ");
-        }
-
-        function renderWdList() {
-            const names = ["الأحد", "الاثنين", "الثلاثاء", "الأربعاء", "الخميس", "الجمعة", "السبت"];
-            const obj = CONFIG.byWeekday || {};
-            wdList.innerHTML = Object.keys(obj).length
-                ? Object.entries(obj).map(([k, v]) => `• ${names[+k]}: ${v.start}-${v.end}`).join("<br>")
-                : "لا استثناءات أسبوعية";
-        }
-
-        async function saveAll() {
-            CONFIG.defaultHours = { start: defStart.value, end: defEnd.value };
-            CONFIG.step = parseInt(step.value, 10) || 30;
-            CONFIG.barbers = CONFIG.barbers || {};
-            CONFIG.barbers.phones = barberPhones.value.split(",").map(x => x.trim()).filter(Boolean);
-
-            await set(ref(db, "config"), CONFIG);
-            stateEl.textContent = "تم الحفظ ومزامنته";
-            setTimeout(() => stateEl.textContent = "", 1500);
-        }
-        saveConfig.onclick = saveAll;
-
-        addWd.onclick = async () => {
-            const d = wdDay.value;
-            CONFIG.byWeekday = CONFIG.byWeekday || {};
-            CONFIG.byWeekday[d] = { start: wdStart.value, end: wdEnd.value };
-            await set(ref(db, "config/byWeekday"), CONFIG.byWeekday);
-            renderWdList();
-        };
-        clearWd.onclick = async () => {
-            const d = wdDay.value;
-            if (CONFIG.byWeekday) { delete CONFIG.byWeekday[d]; await set(ref(db, "config/byWeekday"), CONFIG.byWeekday); renderWdList(); }
-        };
-
-        dayPick.addEventListener("change", renderDay);
-        closeAll.onclick = async () => {
-            const d = dayPick.value; if (!d) return;
-            const st = CONFIG.defaultHours.start || "14:00";
-            const en = CONFIG.defaultHours.end || "01:00";
-            const stepMin = CONFIG.step || 30;
-            const arr = genSlots(st, en, stepMin);
-            CONFIG.closed = CONFIG.closed || {};
-            CONFIG.closed[d] = arr;
-            await set(ref(db, "config/closed/" + d), arr);
-            renderDay();
-        };
-        openAll.onclick = async () => {
-            const d = dayPick.value; if (!d) return;
-            CONFIG.closed = CONFIG.closed || {};
-            await set(ref(db, "config/closed/" + d), []); // فتح الكل
-            delete CONFIG.closed[d];
-            renderDay();
-        };
-
-        const toMin = t => { const [h, m] = t.split(":").map(Number); return h * 60 + m };
-        const pad = n => String(n).padStart(2, "0");
-        const fromMin = m => `${pad(Math.floor(m / 60) % 24)}:${pad(m % 60)}`;
-        function genSlots(start, end, step) {
-            const out = []; let s = toMin(start), e = toMin(end); const span = e > s ? (e - s) : (1440 - s) + e; const steps = Math.floor(span / step);
-            for (let i = 0; i <= steps; i++) out.push(fromMin((s + i * step) % 1440)); return out;
-        }
-        function renderDay() {
-            const d = dayPick.value; if (!d) { countInfo.textContent = ""; return; }
-            const arr = (CONFIG.closed && CONFIG.closed[d]) || [];
-            countInfo.textContent = `مقفول: ${arr.length} خانة`;
-        }
+        reload.addEventListener("click", loadAllBookings);
+        loadAllBookings();
     </script>
 </body>
 </html>

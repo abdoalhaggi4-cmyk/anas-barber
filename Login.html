@@ -5,14 +5,23 @@
     <meta name="viewport" content="width=device-width,initial-scale=1" />
     <title>دخول المشرف | ANAS BARBER</title>
     <style>
+        :root {
+            --bg: #0f1115;
+            --text: #e7ebf3;
+            --brand: #d4af37;
+            --brand2: #f5d76e;
+            --stroke: #242a35;
+            --muted: #8b93a7
+        }
+
         body {
             margin: 0;
             font-family: "Noto Kufi Arabic","Cairo",sans-serif;
             background: #0f1115;
-            color: #e7ebf3;
+            color: var(--text);
             display: flex;
-            justify-content: center;
             align-items: center;
+            justify-content: center;
             min-height: 100vh
         }
 
@@ -21,7 +30,7 @@
             border: 1px solid #2a3241;
             border-radius: 14px;
             padding: 20px 18px;
-            width: min(380px,94vw);
+            width: min(360px,94vw);
             display: grid;
             gap: 14px;
             box-shadow: 0 10px 30px rgba(0,0,0,.35)
@@ -36,7 +45,7 @@
         .subtitle {
             text-align: center;
             font-size: 13px;
-            color: #8b93a7;
+            color: var(--muted);
             margin-bottom: 4px
         }
 
@@ -60,20 +69,15 @@
                 font-size: 13px
             }
 
-        button {
+        .primary {
             cursor: pointer;
             border-radius: 10px;
             border: none;
             padding: 10px 14px;
             font-size: 14px;
-            font-weight: 600
-        }
-
-        .primary {
-            width: 100%;
-            background: linear-gradient(135deg,#d4af37,#f5d76e);
-            color: #0b0d11;
-            margin-top: 4px
+            font-weight: 700;
+            background: linear-gradient(135deg,var(--brand),var(--brand2));
+            color: #0b0d11
         }
 
         .error {
@@ -93,20 +97,20 @@
         .switch {
             text-align: center;
             font-size: 13px;
-            color: #8b93a7
+            color: var(--muted)
         }
 
             .switch a {
-                color: #f5d76e;
+                color: var(--brand2);
                 cursor: pointer;
                 text-decoration: none;
-                font-weight: 600
+                font-weight: 700
             }
 
         hr {
             border: none;
             border-top: 1px solid #2a3241;
-            margin: 6px 0 4px 0
+            margin: 6px 0 4px
         }
 
         .oauth {
@@ -114,11 +118,9 @@
             gap: 8px
         }
 
-        .btn-outline {
-            width: 100%;
-            background: #10131a;
-            border: 1px solid #2a3241;
-            color: #e7ebf3
+        .google {
+            background: #fff;
+            color: #111
         }
     </style>
 </head>
@@ -127,6 +129,7 @@
         <h2 id="formTitle">دخول المشرف</h2>
         <div class="subtitle">لوحة إدارة ANAS BARBER</div>
 
+        <!-- نموذج تسجيل الدخول -->
         <form id="loginForm">
             <label>
                 البريد الإلكتروني
@@ -141,12 +144,12 @@
         </form>
 
         <div class="oauth">
-            <button id="googleBtn" class="btn-outline">تسجيل الدخول عبر Google</button>
-            <button id="appleBtn" class="btn-outline">تسجيل الدخول عبر Apple</button>
+            <button id="googleBtn" class="primary google">تسجيل الدخول عبر Google</button>
         </div>
 
         <hr>
 
+        <!-- إنشاء حساب مشرف -->
         <form id="registerForm" style="display:none;">
             <label>
                 بريد المشرف الجديد
@@ -166,17 +169,28 @@
         </div>
     </div>
 
+    <!-- ربط نظام المصادقة -->
     <script type="module" src="./auth.js"></script>
+
+    <!-- تبديل واجهة الدخول/التسجيل -->
     <script>
         const toggleLink = document.getElementById('toggleLink');
         const toggleText = document.getElementById('toggleText');
         const loginForm = document.getElementById('loginForm');
         const registerForm = document.getElementById('registerForm');
         const title = document.getElementById('formTitle');
+
         toggleLink.addEventListener('click', () => {
-            const showingLogin = loginForm.style.display !== 'none';
-            if (showingLogin) { loginForm.style.display = 'none'; registerForm.style.display = 'block'; title.textContent = 'إنشاء حساب مشرف'; toggleText.textContent = 'لديك حساب بالفعل؟'; toggleLink.textContent = 'العودة لتسجيل الدخول'; }
-            else { loginForm.style.display = 'block'; registerForm.style.display = 'none'; title.textContent = 'دخول المشرف'; toggleText.textContent = 'لا تملك حساب مشرف؟'; toggleLink.textContent = 'إنشاء حساب جديد'; }
+            const showLogin = loginForm.style.display !== 'none';
+            if (showLogin) {
+                loginForm.style.display = 'none'; registerForm.style.display = 'block';
+                title.textContent = 'إنشاء حساب مشرف';
+                toggleText.textContent = 'لديك حساب بالفعل؟'; toggleLink.textContent = 'العودة لتسجيل الدخول';
+            } else {
+                loginForm.style.display = 'block'; registerForm.style.display = 'none';
+                title.textContent = 'دخول المشرف';
+                toggleText.textContent = 'لا تملك حساب مشرف؟'; toggleLink.textContent = 'إنشاء حساب جديد';
+            }
         });
     </script>
 </body>

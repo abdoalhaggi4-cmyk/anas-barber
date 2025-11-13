@@ -14,6 +14,10 @@
             --muted: #8b93a7
         }
 
+        * {
+            box-sizing: border-box
+        }
+
         body {
             margin: 0;
             font-family: "Noto Kufi Arabic","Cairo",sans-serif;
@@ -171,6 +175,11 @@
             display: none
         }
 
+        .note {
+            color: #9be49b;
+            font-size: 14px
+        }
+
         footer {
             text-align: center;
             color: var(--muted);
@@ -186,7 +195,10 @@
                 <img src="assets/logo.png" alt="ANAS BARBER" style="width:38px;height:38px;border-radius:10px;object-fit:cover">
                 <h1>ANAS BARBER | الحجز الإلكتروني</h1>
             </div>
-            <button class="btn primary" onclick="document.getElementById('booking').scrollIntoView({behavior:'smooth'})">احجز الآن</button>
+            <div style="display:flex;gap:8px">
+                <a class="btn" href="login.html">لوحة الإدارة</a>
+                <button class="btn primary" onclick="document.getElementById('booking').scrollIntoView({behavior:'smooth'})">احجز الآن</button>
+            </div>
         </div>
     </header>
 
@@ -200,6 +212,8 @@
 
     <section id="booking" class="container">
         <h3>نموذج الحجز</h3>
+        <p class="note" id="configState">تحميل الإعدادات...</p>
+
         <form id="bookForm" novalidate>
             <div class="grid2">
                 <label style="display:grid;gap:6px">
@@ -208,15 +222,17 @@
                         <option value="anas">أنس</option>
                     </select>
                 </label>
+
                 <label style="display:grid;gap:6px">
                     <span>اسم العميل</span>
                     <input id="client" name="client" required>
                 </label>
+
                 <label style="display:grid;gap:6px">
                     <span>رقم الهاتف</span>
-                    <input id="phone" name="phone" inputmode="tel" required
-                           pattern="^[0-9+\\-\\s()]{6,}$" placeholder="+218 xx xxx xxxx">
+                    <input id="phone" name="phone" inputmode="tel" required pattern="^[0-9+\\-\\s()]{6,}$" placeholder="+218 xx xxx xxxx">
                 </label>
+
                 <label style="display:grid;gap:6px">
                     <span>بند الحلاقة</span>
                     <select id="service" name="service" required>
@@ -232,6 +248,7 @@
                         <option value="skin_deep">تنظيف بشرة عميق</option>
                         <option value="hydrafacial">تنظيف بشرة بجهاز Hydrafacial</option>
                         <option value="vip_shave">حلاقة VIP</option>
+                        <option value="color">صباغة</option>
                     </select>
                 </label>
             </div>
@@ -253,7 +270,7 @@
                     <input type="checkbox" id="groom" name="groom" style="accent-color:#d4af37;width:18px;height:18px">
                     <span>إضافة باقة العرسان</span>
                 </label>
-                <div style="color:var(--muted);font-size:14px">ملاحظة: باقة العرسان بعد يومين على الأقل.</div>
+                <div style="color:var(--muted);font-size:14px">ملاحظة: حجز باقة العرسان يجب أن يكون بعد يومين على الأقل من تاريخ اليوم.</div>
             </div>
 
             <div id="groom-packages" style="display:none;margin-top:10px">
@@ -270,16 +287,19 @@
             </div>
 
             <div id="formErrors"></div>
+
             <button class="btn primary" type="submit" style="margin-top:10px">إرسال الطلب</button>
+            <p class="note" id="afterMsg" style="display:none;margin-top:6px">تم استلام حجزك، وسيتم تأكيده قريبًا عبر واتساب.</p>
         </form>
     </section>
 
-    <footer>© 2025 ANAS BARBER | متصل بـ Firebase</footer>
+    <footer>© 2025 ANAS BARBER | واجهة حجز مرتبطة بـ Firebase</footer>
 
     <script type="module">
-        import { initializeApp, getApp, getApps } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-        import { getDatabase, ref, onValue, get, push, set, child } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+        import { getDatabase, ref, get, push, set, onValue } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
 
+        // إعدادات مشروعك
         const firebaseConfig = {
             apiKey: "AIzaSyAz9EtvfCQuyTTgeEcT6F1CjcpCg5JzeSA",
             authDomain: "anas-project-39b6b.firebaseapp.com",
@@ -287,145 +307,138 @@
             projectId: "anas-project-39b6b",
             storageBucket: "anas-project-39b6b.firebasestorage.app",
             messagingSenderId: "975846667862",
-            appId: "1:975846667862:web:427b6ca200b21c9813edf7"
+            appId: "1:975846667862:web:427b6ca200b21c9813edf7",
+            measurementId: "G-X0NHN24EVW"
         };
-        const app = getApps().length ? getApp() : initializeApp(firebaseConfig);
+
+        const app = initializeApp(firebaseConfig);
         const db = getDatabase(app);
 
-        // --- config sync from RTDB ---
-        let CONFIG = { step: 30, defaultHours: { start: "14:00", end: "01:00" }, byWeekday: {}, closed: {}, barbers: { list: ["anas"] } };
-        onValue(ref(db, "config"), (snap) => {
-            if (snap.exists()) { CONFIG = { ...CONFIG, ...snap.val() }; refreshDate(); }
-        });
+        // عناصر
+        const dateInput = document.getElementById("date");
+        const timeGrid = document.getElementById("timeGrid");
+        const timeInput = document.getElementById("time");
+        const noTimes = document.getElementById("noTimes");
+        const groomCb = document.getElementById("groom");
+        const pkgBox = document.getElementById("groom-packages");
+        const errsBox = document.getElementById("formErrors");
+        const afterMsg = document.getElementById("afterMsg");
+        const configState = document.getElementById("configState");
 
-        // helpers
-        const toMin = t => { const [h, m] = t.split(":").map(Number); return h * 60 + m };
+        groomCb.addEventListener("change", () => { pkgBox.style.display = groomCb.checked ? "block" : "none"; });
+
         const pad = n => String(n).padStart(2, "0");
-        const fromMin = m => `${pad(Math.floor(m / 60) % 24)}:${pad(m % 60)}`;
-        const to12 = t => { let [h, m] = t.split(":").map(Number); const suf = h >= 12 ? "م" : "ص"; h = ((h + 11) % 12) + 1; return `${pad(h)}:${pad(m)} ${suf}` };
+        const toMin = t => { const [h, m] = t.split(":").map(Number); return h * 60 + m };
+        const fromMin = m => `${pad(Math.floor(m / 60))}:${pad(m % 60)}`;
+        function to12(t) { let [h, m] = t.split(":").map(Number); const s = h >= 12 ? "م" : "ص"; h = ((h + 11) % 12) + 1; return `${pad(h)}:${pad(m)} ${s}` }
 
-        function generateSlots(start, end, step) {
-            const out = []; let s = toMin(start), e = toMin(end);
-            const span = e > s ? (e - s) : (1440 - s) + e;
+        // تحميل الإعدادات من /config
+        let CFG = { step: 30, defaultHours: { start: "14:00", end: "01:00" }, byWeekday: {}, closed: {}, prices: {} };
+
+        onValue(ref(db, "config"), snap => {
+            if (snap.exists()) CFG = { ...CFG, ...snap.val() };
+            configState.textContent = "تمت مزامنة الإعدادات.";
+            fillTimeOptions(dateInput.value);
+        }, { onlyOnce: false });
+
+        function generateSlots(st, en, step) {
+            const out = []; let s = toMin(st), e = toMin(en);
+            const span = (e > s) ? (e - s) : (1440 - s) + e;
             const steps = Math.floor(span / step);
             for (let i = 0; i <= steps; i++) out.push(fromMin((s + i * step) % 1440));
             return out;
         }
         function scheduleFor(dateStr) {
             const wd = new Date(dateStr).getDay();
-            const w = CONFIG.byWeekday && CONFIG.byWeekday[wd];
-            return { start: (w?.start || CONFIG.defaultHours.start), end: (w?.end || CONFIG.defaultHours.end), step: (CONFIG.step || 30) };
+            const w = CFG.byWeekday?.[wd];
+            return { start: (w?.start || CFG.defaultHours.start), end: (w?.end || CFG.defaultHours.end), step: (CFG.step || 30) };
         }
-        function isClosed(dateStr, t) {
-            const arr = (CONFIG.closed && CONFIG.closed[dateStr]) || [];
-            return Array.isArray(arr) && arr.includes(t);
-        }
-
-        // UI refs
-        const groomCheckbox = document.getElementById("groom");
-        const packageBox = document.getElementById("groom-packages");
-        const timeGrid = document.getElementById("timeGrid");
-        const timeInput = document.getElementById("time");
-        const dateInput = document.getElementById("date");
-        const errsBox = document.getElementById("formErrors");
-        const noTimes = document.getElementById("noTimes");
-        const barberSel = document.getElementById("barber");
-
-        // fill barbers list from config
-        onValue(ref(db, "config/barbers/list"), (s) => {
-            if (s.exists()) {
-                barberSel.innerHTML = "";
-                s.val().forEach(v => {
-                    const opt = document.createElement("option");
-                    opt.value = v; opt.textContent = v;
-                    barberSel.appendChild(opt);
-                });
-            }
-        });
-
-        groomCheckbox.addEventListener("change", () => { packageBox.style.display = groomCheckbox.checked ? "block" : "none" });
-
         function groomOk(dateStr) {
-            const pick = new Date(dateStr + "T00:00:00");
-            const min = new Date(); min.setDate(min.getDate() + 2);
-            const limit = new Date(min.getFullYear(), min.getMonth(), min.getDate());
-            return pick >= limit;
+            const pick = new Date(dateStr + "T00:00:00"); const min = new Date(); min.setDate(min.getDate() + 2);
+            const limit = new Date(min.getFullYear(), min.getMonth(), min.getDate()); return pick >= limit;
         }
 
         async function fillTimeOptions(dateStr) {
             timeGrid.innerHTML = ""; timeInput.value = ""; noTimes.style.display = "none";
             if (!dateStr) return;
 
+            // المحجوز لهذا اليوم
             const booked = [];
-            const snap = await get(ref(db, "bookings"));
-            if (snap.exists()) {
-                snap.forEach(c => {
-                    const v = c.val();
-                    if (v.date === dateStr && v.status !== "canceled") booked.push(v.time);
+            const bSnap = await get(ref(db, "bookings"));
+            if (bSnap.exists()) {
+                bSnap.forEach(c => {
+                    const v = c.val(); if (v.date === dateStr && v.status !== "rejected") booked.push(v.time);
                 });
             }
 
+            // المقفلة لهذا اليوم من الإعدادات
+            const closed = new Set(CFG.closed?.[dateStr] || []);
+
             const { start, end, step } = scheduleFor(dateStr);
             const slots = generateSlots(start, end, step);
-            let free = 0;
-
+            let freeCount = 0;
             slots.forEach(t => {
-                if (isClosed(dateStr, t)) return;
+                if (closed.has(t)) return;
                 const div = document.createElement("div");
                 div.textContent = to12(t);
-                if (booked.includes(t)) { div.className = "time-slot booked"; }
-                else {
+                if (booked.includes(t)) {
+                    div.className = "time-slot booked";
+                } else {
                     div.className = "time-slot";
                     div.onclick = () => {
                         [...timeGrid.children].forEach(x => x.classList.remove("selected"));
-                        div.classList.add("selected"); timeInput.value = t;
+                        div.classList.add("selected");
+                        timeInput.value = t;
                     };
-                    free++;
+                    freeCount++;
                 }
                 timeGrid.appendChild(div);
             });
-            if (free === 0) noTimes.style.display = "block";
+            if (freeCount === 0) noTimes.style.display = "block";
         }
 
-        function refreshDate() { if (dateInput.value) fillTimeOptions(dateInput.value); }
-
+        // تهيئة التاريخ
         const today = new Date().toISOString().slice(0, 10);
-        dateInput.min = today; dateInput.value = today; await fillTimeOptions(today);
+        dateInput.min = today; dateInput.value = today;
         dateInput.addEventListener("change", e => fillTimeOptions(e.target.value));
 
+        // إرسال الحجز
         document.getElementById("bookForm").addEventListener("submit", async e => {
-            e.preventDefault(); errsBox.style.display = "none"; errsBox.innerHTML = "";
+            e.preventDefault(); errsBox.style.display = "none"; errsBox.innerHTML = ""; afterMsg.style.display = "none";
+
             const name = document.getElementById("client").value.trim();
             const phone = document.getElementById("phone").value.trim();
-            const barber = barberSel.value;
+            const barber = document.getElementById("barber").value;
             const service = document.getElementById("service").value;
-            const date = dateInput.value;
-            const time = timeInput.value;
-            const groom = groomCheckbox.checked;
+            const date = document.getElementById("date").value;
+            const time = document.getElementById("time").value;
+            const groom = groomCb.checked;
             const packageType = groom ? document.getElementById("package").value : "";
 
             const msgs = [];
-            if (!name || !phone || !barber || !service || !date || !time) msgs.push("يرجى تعبئة جميع الحقول واختيار وقت.");
+            if (!name || !phone || !barber || !service || !date || !time) msgs.push("يرجى تعبئة جميع الحقول واختيار وقت متاح.");
             if (groom && !packageType) msgs.push("اختر نوع باقة العرسان.");
-            if (groom && !groomOk(date)) msgs.push("باقة العرسان بعد يومين على الأقل.");
+            if (groom && !groomOk(date)) msgs.push("باقة العرسان يجب أن تكون بعد يومين على الأقل.");
             if (!e.target.checkValidity()) msgs.push("تحقق من صيغة رقم الهاتف.");
 
             if (msgs.length) { errsBox.innerHTML = msgs.map(m => "• " + m).join("<br>"); errsBox.style.display = "block"; return; }
 
-            const newRef = push(ref(db, "bookings"));
-            const record = { name, phone, barber, service, date, time, groom, packageType, status: "pending", createdAt: Date.now() };
-            await set(newRef, record);
+            const bookingRef = ref(db, "bookings");
+            const newRef = push(bookingRef);
+            await set(newRef, {
+                name, phone, barber, service, date, time, groom, packageType,
+                status: "pending",
+                createdAt: Date.now()
+            });
 
-            // نداء Cloud Function لإرسال رسالة شكر + تنبيه الحلاق
-            try {
-                await fetch("https://us-central1-anas-project-39b6b.cloudfunctions.net/sendWhatsAppOnNewBooking", {
-                    method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id: newRef.key, ...record })
-                });
-            } catch (_) { }
-
-            alert("تم استلام الطلب. ستصلك رسالة تأكيد بعد المراجعة.");
-            e.target.reset(); groomCheckbox.checked = false; packageBox.style.display = "none"; fillTimeOptions(date);
+            e.target.reset();
+            groomCb.checked = false; pkgBox.style.display = "none";
+            afterMsg.style.display = "block";
+            fillTimeOptions(date);
         });
+
+        // أول تعبئة بعد أن تصل الإعدادات
+        setTimeout(() => fillTimeOptions(today), 600);
     </script>
 </body>
 </html>
