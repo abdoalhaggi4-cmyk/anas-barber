@@ -505,64 +505,37 @@
 
         // ====== فتح واتساب متوافق مع iOS/Android/Desktop ======
         function openViaWhatsApp(phone, text) {
-            const digits = String(phone || "").replace(/\D/g, "");
-            if (!digits) return;
-            const appUrl = `whatsapp://send?phone=${digits}&text=${encodeURIComponent(text)}`;
-            const webUrl = `https://wa.me/${digits}?text=${encodeURIComponent(text)}`;
+            // 1) تطبيع الرقم: أرقام فقط
+            let num = String(phone || "").replace(/\D/g, "");   // "0912345678" أو "21891..."
+            if (!num) return;
+
+            // إن كان يبدأ بـ 0 فاحذفه
+            if (num.startsWith("0")) num = num.slice(1);
+
+            // إن لم يبدأ بـ 218 فأضفها
+            if (!num.startsWith("218")) num = "218" + num;
+
+            // 2) روابط التطبيق والويب (كلاهما بدون علامة + حسب متطلبات واتساب)
+            const appUrl = `whatsapp://send?phone=${num}&text=${encodeURIComponent(text)}`;
+            const webUrl = `https://wa.me/${num}?text=${encodeURIComponent(text)}`;
+
+            // 3) فتح متوافق مع iPhone/Android
             const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+
             if (isIOS) {
-                window.location.assign(appUrl);
-                setTimeout(() => { window.location.assign(webUrl); }, 700);
+                // افتح التطبيق مباشرة؛ ثم fallback سريع للويب إذا لم يفتح
+                window.location.href = appUrl;
+                setTimeout(() => { window.location.href = webUrl; }, 700);
             } else {
-                window.open(appUrl, '_self');
-                setTimeout(() => { window.open(webUrl, '_self'); }, 700);
+                // على أندرويد/ديسكتوب: href أولًا (يعمل مع معظم المتصفحات)
+                try {
+                    window.location.href = appUrl;
+                    setTimeout(() => { window.location.href = webUrl; }, 700);
+                } catch {
+                    window.open(webUrl, "_self");
+                }
             }
         }
-
-        // تفعيل الأزرار (تأكيد/رفض) مع فتح واتساب
-        tbody.addEventListener("click", async (e) => {
-            const okId = e.target.getAttribute("data-ok");
-            const noId = e.target.getAttribute("data-no");
-            if (okId) {
-                const row = [...tbody.querySelectorAll("[data-ok]")].find(x => x.getAttribute("data-ok") == okId).closest("tr");
-                const cells = row.querySelectorAll("td");
-                const name = cells[0].textContent.trim();
-                const phone = cells[1].textContent.trim();
-                const service = cells[2].textContent.trim();
-                const date = cells[3].textContent.trim();
-                const time = cells[4].textContent.trim();
-
-                await update(ref(db, "bookings/" + okId), { status: "confirmed" });
-
-                const msg = `تم تأكيد موعدك في ANAS BARBER ✅
-الاسم: ${name}
-الخدمة: ${service}
-التاريخ: ${date}
-الوقت: ${time}
-نراك في الموعد بإذن الله.`;
-                openViaWhatsApp(phone, msg);
-                toast("تم تأكيد الحجز وإعداد رسالة واتساب جاهزة");
-                loadAllBookings();
-            }
-            if (noId) {
-                const row = [...tbody.querySelectorAll("[data-no]")].find(x => x.getAttribute("data-no") == noId).closest("tr");
-                const cells = row.querySelectorAll("td");
-                const name = cells[0].textContent.trim();
-                const phone = cells[1].textContent.trim();
-                const date = cells[3].textContent.trim();
-                const time = cells[4].textContent.trim();
-
-                await update(ref(db, "bookings/" + noId), { status: "rejected" });
-
-                const msg = `نعتذر ${name}،
-لم نتمكن من تأكيد موعد ${date} الساعة ${time}.
-يرجى اختيار وقت آخر وسنخدمك بكل سرور.`;
-                openViaWhatsApp(phone, msg);
-                toast("تم رفض الحجز وإعداد رسالة واتساب جاهزة");
-                loadAllBookings();
-            }
-        });
-
         // تذكير داخلي قبل الموعد بساعة (توست داخل لوحة الإدارة)
         let reminderOn = false;
         reminderToggle.addEventListener("change", () => { reminderOn = reminderToggle.checked; });
