@@ -202,13 +202,12 @@
 </head>
 <body>
     <div class="wrap">
-
         <!-- رأس -->
         <div class="card">
             <div class="row" style="justify-content:space-between">
                 <h2>لوحة إدارة ANAS BARBER</h2>
                 <div class="row">
-                    <a class="button" href="index.html" style="text-decoration:none"><button>العودة للموقع</button></a>
+                    <button class="primary" onclick="logout(); window.location.href='index.html';">تسجيل الخروج</button>
                     <button class="primary" onclick="logout()">تسجيل الخروج</button>
                 </div>
             </div>
@@ -243,7 +242,7 @@
             </div>
         </div>
 
-        <!-- إعدادات عامة -->
+        <!-- الإعدادات العامة -->
         <div class="card">
             <h2>الإعدادات العامة (مزامنة مع الزبون)</h2>
             <div class="grid2">
@@ -281,7 +280,7 @@
             <div id="wdList" class="muted"></div>
         </div>
 
-        <!-- إدارة يوم محدد (قفل/فتح خانات) -->
+        <!-- إدارة يوم محدد -->
         <div class="card" id="perDayCard">
             <h2>إدارة أوقات يوم محدد</h2>
             <div class="row" style="flex-wrap:wrap;gap:10px">
@@ -305,7 +304,6 @@
             </div>
             <div class="muted">تُحفظ الإعدادات في المسار <code>/config</code> بقاعدة البيانات.</div>
         </div>
-
     </div>
 
     <div id="toast" class="toast" style="display:none"></div>
@@ -336,15 +334,11 @@
 
         // تحميل مباشر من /config
         onValue(ref(db, "config"), snap => {
-            if (snap.exists()) {
-                CFG = { ...CFG, ...snap.val() };
-            }
-            // تحديث واجهة الإعدادات
+            if (snap.exists()) { CFG = { ...CFG, ...snap.val() }; }
             defStart.value = CFG.defaultHours?.start || "14:00";
             defEnd.value = CFG.defaultHours?.end || "01:00";
             step15.checked = (CFG.step === 15);
             step30.checked = (CFG.step !== 15);
-
             renderWDList();
             if (dayPick.value) renderDay(dayPick.value);
         });
@@ -355,7 +349,6 @@
                 ? Object.entries(CFG.byWeekday).map(([d, v]) => `• ${names[+d]}: ${v.start}-${v.end}`).join("<br>")
                 : "لا استثناءات أسبوعية";
         }
-
         function pad(n) { return String(n).padStart(2, "0") }
         function toMin(t) { const [h, m] = t.split(":").map(Number); return h * 60 + m }
         function fromMin(m) { m = (m + 1440) % 1440; return `${pad(Math.floor(m / 60))}:${pad(m % 60)}` }
@@ -379,8 +372,7 @@
             const sch = scheduleFor(dateStr);
             const slots = generateSlots(sch.start, sch.end, sch.step);
             const closed = new Set(CFG.closed?.[dateStr] || []);
-            slotGrid.innerHTML = "";
-            let closedCount = 0;
+            slotGrid.innerHTML = ""; let closedCount = 0;
             slots.forEach(t => {
                 const div = document.createElement("div");
                 const isClosed = closed.has(t); if (isClosed) closedCount++;
@@ -396,7 +388,7 @@
             const t = div.dataset.t; const d = dayPick.value; if (!d) return;
             const arr = CFG.closed[d] || (CFG.closed[d] = []);
             const i = arr.indexOf(t); if (i === -1) arr.push(t); else arr.splice(i, 1);
-            set(ref(db, "config/closed/" + d), arr.length ? arr : null); // null يحذف العقدة
+            set(ref(db, "config/closed/" + d), arr.length ? arr : null);
             toast("تم تحديث خانات اليوم");
             renderDay(d);
         });
@@ -468,10 +460,7 @@
 
         function renderBookings(list) {
             tbody.innerHTML = "";
-            if (!list.length) {
-                tbody.innerHTML = '<tr><td colspan="7" class="muted">لا توجد حجوزات</td></tr>';
-                bkState.textContent = ""; return;
-            }
+            if (!list.length) { tbody.innerHTML = '<tr><td colspan="7" class="muted">لا توجد حجوزات</td></tr>'; bkState.textContent = ""; return; }
             list.sort((a, b) => ((a.date || "") + (a.time || "")).localeCompare((b.date || "") + (b.time || "")));
             list.forEach(b => {
                 const id = b._id;
@@ -479,16 +468,16 @@
                 const s = serviceNames[b.service] || b.service || "";
                 const pill = `<span class="pill ${b.status || 'pending'}">${b.status || 'pending'}</span>`;
                 tr.innerHTML = `
-            <td>${b.name || ""}</td>
-            <td>${b.phone || ""}</td>
-            <td>${s}</td>
-            <td>${b.date || ""}</td>
-            <td>${b.time || ""}</td>
-            <td>${pill}</td>
-            <td style="white-space:nowrap">
-              <button class="primary" data-ok="${id}">تأكيد</button>
-              <button class="warn" data-no="${id}">رفض</button>
-            </td>`;
+              <td>${b.name || ""}</td>
+              <td>${b.phone || ""}</td>
+              <td>${s}</td>
+              <td>${b.date || ""}</td>
+              <td>${b.time || ""}</td>
+              <td>${pill}</td>
+              <td style="white-space:nowrap">
+                <button class="primary" data-ok="${id}">تأكيد</button>
+                <button class="warn" data-no="${id}">رفض</button>
+              </td>`;
                 tbody.appendChild(tr);
             });
             bkState.textContent = "عدد الحجوزات: " + list.length;
@@ -509,13 +498,28 @@
         async function loadAllBookings() {
             const snap = await get(ref(db, "bookings"));
             const list = []; if (snap.exists()) collectBookings(snap, list);
-            // أظهر المستقبل فقط
             const today = new Date().toISOString().slice(0, 10);
             const future = list.filter(b => !b.date || b.date >= today);
             renderBookings(future);
         }
 
-        // تفعيل الأزرار
+        // ====== فتح واتساب متوافق مع iOS/Android/Desktop ======
+        function openViaWhatsApp(phone, text) {
+            const digits = String(phone || "").replace(/\D/g, "");
+            if (!digits) return;
+            const appUrl = `whatsapp://send?phone=${digits}&text=${encodeURIComponent(text)}`;
+            const webUrl = `https://wa.me/${digits}?text=${encodeURIComponent(text)}`;
+            const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+            if (isIOS) {
+                window.location.assign(appUrl);
+                setTimeout(() => { window.location.assign(webUrl); }, 700);
+            } else {
+                window.open(appUrl, '_self');
+                setTimeout(() => { window.open(webUrl, '_self'); }, 700);
+            }
+        }
+
+        // تفعيل الأزرار (تأكيد/رفض) مع فتح واتساب
         tbody.addEventListener("click", async (e) => {
             const okId = e.target.getAttribute("data-ok");
             const noId = e.target.getAttribute("data-no");
@@ -536,7 +540,7 @@
 التاريخ: ${date}
 الوقت: ${time}
 نراك في الموعد بإذن الله.`;
-                window.open(waLink(phone, msg), "_blank");
+                openViaWhatsApp(phone, msg);
                 toast("تم تأكيد الحجز وإعداد رسالة واتساب جاهزة");
                 loadAllBookings();
             }
@@ -553,13 +557,13 @@
                 const msg = `نعتذر ${name}،
 لم نتمكن من تأكيد موعد ${date} الساعة ${time}.
 يرجى اختيار وقت آخر وسنخدمك بكل سرور.`;
-                window.open(waLink(phone, msg), "_blank");
+                openViaWhatsApp(phone, msg);
                 toast("تم رفض الحجز وإعداد رسالة واتساب جاهزة");
                 loadAllBookings();
             }
         });
 
-        // تذكير داخلي قبل الموعد بساعة (للحلاق داخل لوحة الإدارة)
+        // تذكير داخلي قبل الموعد بساعة (توست داخل لوحة الإدارة)
         let reminderOn = false;
         reminderToggle.addEventListener("change", () => { reminderOn = reminderToggle.checked; });
         setInterval(async () => {
@@ -577,9 +581,8 @@
             if (due.length) {
                 const names = due.map(x => `${x.name} (${x.time})`).join(" • ");
                 toast(`تذكير: مواعيد بعد ~ساعة: ${names}`, 8000);
-                // يمكنك الضغط على الحجز من الجدول ثم زر "تأكيد" لفتح رسالة واتساب مخصّصة (أو تعديلها يدوياً لرسالة تذكير)
             }
-        }, 60 * 1000); // فحص كل دقيقة
+        }, 60 * 1000);
 
         reload.addEventListener("click", loadAllBookings);
         loadAllBookings();

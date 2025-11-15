@@ -186,6 +186,18 @@
             border-top: 1px solid var(--stroke);
             padding: 24px 0
         }
+
+        .toast {
+            position: fixed;
+            bottom: 16px;
+            left: 16px;
+            background: #0e131b;
+            border: 1px solid var(--stroke);
+            padding: 10px 12px;
+            border-radius: 10px;
+            font-size: 13px;
+            display: none
+        }
     </style>
 </head>
 <body>
@@ -288,18 +300,20 @@
 
             <div id="formErrors"></div>
 
-            <button class="btn primary" type="submit" style="margin-top:10px">إرسال الطلب</button>
+            <button class="btn primary" type="submit" id="submitBtn" style="margin-top:10px">إرسال الطلب</button>
             <p class="note" id="afterMsg" style="display:none;margin-top:6px">تم استلام حجزك، وسيتم تأكيده قريبًا عبر واتساب.</p>
         </form>
     </section>
 
     <footer>© 2025 ANAS BARBER | واجهة حجز مرتبطة بـ Firebase</footer>
 
+    <div id="toast" class="toast"></div>
+
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
         import { getDatabase, ref, get, push, set, onValue } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
 
-        // إعدادات مشروعك
+        // Firebase
         const firebaseConfig = {
             apiKey: "AIzaSyAz9EtvfCQuyTTgeEcT6F1CjcpCg5JzeSA",
             authDomain: "anas-project-39b6b.firebaseapp.com",
@@ -310,11 +324,10 @@
             appId: "1:975846667862:web:427b6ca200b21c9813edf7",
             measurementId: "G-X0NHN24EVW"
         };
-
         const app = initializeApp(firebaseConfig);
         const db = getDatabase(app);
 
-        // عناصر
+        // UI عناصر
         const dateInput = document.getElementById("date");
         const timeGrid = document.getElementById("timeGrid");
         const timeInput = document.getElementById("time");
@@ -324,38 +337,54 @@
         const errsBox = document.getElementById("formErrors");
         const afterMsg = document.getElementById("afterMsg");
         const configState = document.getElementById("configState");
+        const submitBtn = document.getElementById("submitBtn");
+        const toastEl = document.getElementById("toast");
+        const toast = (m, ms = 2500) => { toastEl.textContent = m; toastEl.style.display = "block"; setTimeout(() => toastEl.style.display = "none", ms) };
 
-        groomCb.addEventListener("change", () => { pkgBox.style.display = groomCb.checked ? "block" : "none"; });
+        groomCb.addEventListener("change", () => { pkgBox.style.display = groomCb.checked ? "block" : "none" });
 
         const pad = n => String(n).padStart(2, "0");
         const toMin = t => { const [h, m] = t.split(":").map(Number); return h * 60 + m };
         const fromMin = m => `${pad(Math.floor(m / 60))}:${pad(m % 60)}`;
-        function to12(t) { let [h, m] = t.split(":").map(Number); const s = h >= 12 ? "م" : "ص"; h = ((h + 11) % 12) + 1; return `${pad(h)}:${pad(m)} ${s}` }
+        const to12 = t => { let [h, m] = t.split(":").map(Number); const s = h >= 12 ? "م" : "ص"; h = ((h + 11) % 12) + 1; return `${pad(h)}:${pad(m)} ${s}` };
 
-        // تحميل الإعدادات من /config
+        // عدم تكرار الأوقات
+        function generateSlots(st, en, step, includeEnd = false) {
+            const out = [];
+            let s = toMin(st), e = toMin(en);
+            const maxHops = Math.ceil(1440 / Math.max(1, step)) + 2;
+            let hops = 0;
+            out.push(fromMin(s));
+            while (true) {
+                s = (s + step) % 1440;
+                if (s === e) break;
+                out.push(fromMin(s));
+                if (++hops > maxHops) break;
+            }
+            if (includeEnd) out.push(fromMin(e));
+            return Array.from(new Set(out));
+        }
+
+        // الإعدادات
         let CFG = { step: 30, defaultHours: { start: "14:00", end: "01:00" }, byWeekday: {}, closed: {}, prices: {} };
 
         onValue(ref(db, "config"), snap => {
             if (snap.exists()) CFG = { ...CFG, ...snap.val() };
             configState.textContent = "تمت مزامنة الإعدادات.";
             fillTimeOptions(dateInput.value);
-        }, { onlyOnce: false });
+        });
 
-        function generateSlots(st, en, step) {
-            const out = []; let s = toMin(st), e = toMin(en);
-            const span = (e > s) ? (e - s) : (1440 - s) + e;
-            const steps = Math.floor(span / step);
-            for (let i = 0; i <= steps; i++) out.push(fromMin((s + i * step) % 1440));
-            return out;
-        }
         function scheduleFor(dateStr) {
             const wd = new Date(dateStr).getDay();
             const w = CFG.byWeekday?.[wd];
             return { start: (w?.start || CFG.defaultHours.start), end: (w?.end || CFG.defaultHours.end), step: (CFG.step || 30) };
         }
+
         function groomOk(dateStr) {
-            const pick = new Date(dateStr + "T00:00:00"); const min = new Date(); min.setDate(min.getDate() + 2);
-            const limit = new Date(min.getFullYear(), min.getMonth(), min.getDate()); return pick >= limit;
+            const pick = new Date(dateStr + "T00:00:00");
+            const min = new Date(); min.setDate(min.getDate() + 2);
+            const limit = new Date(min.getFullYear(), min.getMonth(), min.getDate());
+            return pick >= limit;
         }
 
         async function fillTimeOptions(dateStr) {
@@ -371,11 +400,11 @@
                 });
             }
 
-            // المقفلة لهذا اليوم من الإعدادات
+            // المقفلة لهذا اليوم
             const closed = new Set(CFG.closed?.[dateStr] || []);
-
             const { start, end, step } = scheduleFor(dateStr);
-            const slots = generateSlots(start, end, step);
+            const slots = generateSlots(start, end, step, false);
+
             let freeCount = 0;
             slots.forEach(t => {
                 if (closed.has(t)) return;
@@ -402,12 +431,25 @@
         dateInput.min = today; dateInput.value = today;
         dateInput.addEventListener("change", e => fillTimeOptions(e.target.value));
 
+        // تطبيع رقم الهاتف (+218 تلقائياً إن لم يُكتب رمز دولي)
+        function normalizePhone(p) {
+            const digits = (p || "").replace(/\D/g, "");
+            if (!digits) return "";
+            if (p.trim().startsWith("+")) return "+" + digits;
+            // لو رقم ليبي محلي 09xxxxxxxx → +2189xxxxxxxx
+            if (digits.length === 10 && digits.startsWith("0")) return "+218" + digits.slice(1);
+            if (digits.length === 9) return "+218" + digits;
+            return "+" + digits; // كحالة عامة
+        }
+
         // إرسال الحجز
         document.getElementById("bookForm").addEventListener("submit", async e => {
             e.preventDefault(); errsBox.style.display = "none"; errsBox.innerHTML = ""; afterMsg.style.display = "none";
+            submitBtn.disabled = true;
 
             const name = document.getElementById("client").value.trim();
-            const phone = document.getElementById("phone").value.trim();
+            const phoneRaw = document.getElementById("phone").value.trim();
+            const phone = normalizePhone(phoneRaw);
             const barber = document.getElementById("barber").value;
             const service = document.getElementById("service").value;
             const date = document.getElementById("date").value;
@@ -421,20 +463,30 @@
             if (groom && !groomOk(date)) msgs.push("باقة العرسان يجب أن تكون بعد يومين على الأقل.");
             if (!e.target.checkValidity()) msgs.push("تحقق من صيغة رقم الهاتف.");
 
-            if (msgs.length) { errsBox.innerHTML = msgs.map(m => "• " + m).join("<br>"); errsBox.style.display = "block"; return; }
+            if (msgs.length) {
+                errsBox.innerHTML = msgs.map(m => "• " + m).join("<br>");
+                errsBox.style.display = "block";
+                submitBtn.disabled = false;
+                return;
+            }
 
-            const bookingRef = ref(db, "bookings");
-            const newRef = push(bookingRef);
-            await set(newRef, {
-                name, phone, barber, service, date, time, groom, packageType,
-                status: "pending",
-                createdAt: Date.now()
-            });
-
-            e.target.reset();
-            groomCb.checked = false; pkgBox.style.display = "none";
-            afterMsg.style.display = "block";
-            fillTimeOptions(date);
+            try {
+                const bookingRef = ref(db, "bookings");
+                const newRef = push(bookingRef);
+                await set(newRef, {
+                    name, phone, barber, service, date, time, groom, packageType,
+                    status: "pending", createdAt: Date.now()
+                });
+                e.target.reset(); groomCb.checked = false; pkgBox.style.display = "none";
+                afterMsg.style.display = "block";
+                toast("تم إرسال الطلب");
+                fillTimeOptions(date);
+            } catch (err) {
+                errsBox.textContent = "تعذّر الإرسال. حاول لاحقاً.";
+                errsBox.style.display = "block";
+            } finally {
+                submitBtn.disabled = false;
+            }
         });
 
         // أول تعبئة بعد أن تصل الإعدادات
@@ -442,3 +494,4 @@
     </script>
 </body>
 </html>
+```0
