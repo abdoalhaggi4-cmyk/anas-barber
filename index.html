@@ -275,7 +275,10 @@
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-        import { getDatabase, ref, get, push, set, onValue } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
+
+        import {
+            getDatabase, ref, get, push, set, onValue, runTransaction, remove
+        } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyAz9EtvfCQuyTTgeEcT6F1CjcpCg5JzeSA",
@@ -298,6 +301,10 @@
         const errsBox = document.getElementById("formErrors");
         const afterMsg = document.getElementById("afterMsg");
         const configState = document.getElementById("configState");
+        // ====== إعداد قفل المواعيد لمنع الحجز المزدوج ======
+        const LOCK_TTL_MS = 2 * 60 * 1000; // صلاحية القفل دقيقتان
+        const slotKey = (date, time) => `${date}/${time.replace(':', '-')}`;
+        const lockRefOf = (date, time) => ref(db, `locks/${slotKey(date, time)}`);
 
         const pad = n => String(n).padStart(2, "0");
         const toMin = t => { const [h, m] = t.split(":").map(Number); return h * 60 + m; };
@@ -340,25 +347,38 @@
         }
 
         async function fillTimeOptions(dateStr) {
-            const myVersion = ++fillVersion;            // التقط رقم الإصدار لهذا الاستدعاء
             timeGrid.innerHTML = ""; timeInput.value = ""; noTimes.style.display = "none";
             if (!dateStr) return;
 
+            // 1) أوقات محجوزة لهذا اليوم (كل ما عدا المرفوض)
             const booked = new Set();
-            const snap = await get(ref(db, "bookings"));
-            if (myVersion !== fillVersion) return;         // يوجد استدعاء أحدث—أخرج
-            if (snap.exists()) {
-                snap.forEach(c => {
+            const bSnap = await get(ref(db, "bookings"));
+            if (bSnap.exists()) {
+                bSnap.forEach(c => {
                     const v = c.val();
-                    if (v.date === dateStr && v.status !== "rejected" && v.time) booked.add(v.time);
+                    if (v?.date === dateStr && v?.status !== "rejected" && v?.time) {
+                        booked.add(v.time);
+                    }
                 });
             }
 
+            // 2) أقفال نشِطة لهذا اليوم
+            const now = Date.now();
+            const locked = new Set();
+            const lSnap = await get(ref(db, `locks/${dateStr}`));
+            if (lSnap.exists()) {
+                lSnap.forEach(c => {
+                    const v = c.val();
+                    if (!v?.ts || !v?.time) return;
+                    // تجاهُل أي قفل منتهي الصلاحية
+                    if ((now - v.ts) <= LOCK_TTL_MS) locked.add(v.time);
+                });
+            }
+
+            // 3) بناء الشبكة كما لديك
             const closed = new Set(CFG.closed?.[dateStr] || []);
             const { start, end, step } = scheduleFor(dateStr);
             const slots = generateSlots(start, end, step);
-
-            if (myVersion !== fillVersion) return;         // حارس ثانٍ قبل الرسم
 
             let free = 0;
             const frag = document.createDocumentFragment();
@@ -366,7 +386,8 @@
                 if (closed.has(t)) continue;
                 const div = document.createElement("div");
                 div.textContent = to12(t);
-                if (booked.has(t)) {
+
+                if (booked.has(t) || locked.has(t)) {
                     div.className = "time-slot booked";
                 } else {
                     div.className = "time-slot";
@@ -379,19 +400,22 @@
                 }
                 frag.appendChild(div);
             }
-            timeGrid.innerHTML = "";                       // تأكيد نظافة قبل الإقحام
+            timeGrid.innerHTML = "";
             timeGrid.appendChild(frag);
             if (!free) noTimes.style.display = "block";
         }
-
         // تاريخ اليوم
         const today = new Date().toISOString().slice(0, 10);
         dateInput.min = today; dateInput.value = today;
         dateInput.addEventListener("change", e => fillTimeOptions(e.target.value));
 
         // إرسال الحجز
-        document.getElementById("bookForm").addEventListener("submit", async e => {
-            e.preventDefault(); errsBox.style.display = "none"; errsBox.innerHTML = ""; afterMsg.style.display = "none";
+        // إرسال الحجز (مع قفل يمنع الحجز المزدوج لنفس اللحظة)
+        document.getElementById("bookForm").addEventListener("submit", async (e) => {
+            e.preventDefault();
+            errsBox.style.display = "none";
+            errsBox.innerHTML = "";
+            afterMsg.style.display = "none";
 
             const name = document.getElementById("client").value.trim();
             const phone = document.getElementById("phone").value.trim();
@@ -401,16 +425,79 @@
             const time = document.getElementById("time").value;
 
             const msgs = [];
-            if (!name || !phone || !barber || !service || !date || !time) msgs.push("يرجى تعبئة جميع الحقول واختيار وقت متاح.");
-            if (!e.target.checkValidity()) msgs.push("تحقق من صيغة رقم الهاتف.");
-            if (msgs.length) { errsBox.innerHTML = msgs.map(m => "• " + m).join("<br>"); errsBox.style.display = "block"; return; }
+            if (!name || !phone || !barber || !service || !date || !time)
+                msgs.push("يرجى تعبئة جميع الحقول واختيار وقت متاح.");
+            if (!e.target.checkValidity())
+                msgs.push("تحقق من صيغة رقم الهاتف.");
+            if (msgs.length) {
+                errsBox.innerHTML = msgs.map(m => "• " + m).join("<br>");
+                errsBox.style.display = "block";
+                return;
+            }
 
-            const newRef = push(ref(db, "bookings"));
-            await set(newRef, { name, phone, barber, service, date, time, status: "pending", createdAt: Date.now() });
+            const lref = lockRefOf(date, time);
 
-            e.target.reset();
-            afterMsg.style.display = "block";
-            fillTimeOptions(date);
+            try {
+                // 1) إنشاء قفل على (التاريخ، الوقت) — يسمح لأول طلب فقط
+                const tx = await runTransaction(
+                    lref,
+                    (curr) => {
+                        if (curr && curr.booked) return;                 // هناك قفل سابق
+                        return { booked: true, ts: Date.now(), time };   // احجز القفل الآن
+                    },
+                    { applyLocally: false }
+                );
+
+                if (!tx.committed) {
+                    errsBox.innerHTML = "• عذرًا، تم حجز هذا الوقت للتو. اختر وقتًا آخر.";
+                    errsBox.style.display = "block";
+                    await fillTimeOptions(date);
+                    return;
+                }
+
+                // 2) تأكيد عدم وجود حجز سابق محفوظ لنفس اللحظة (تحقق إضافي)
+                const daySnap = await get(ref(db, "bookings"));
+                let alreadyTaken = false;
+                if (daySnap.exists()) {
+                    daySnap.forEach(c => {
+                        const v = c.val();
+                        if (v?.date === date && v?.time === time && v?.status !== "rejected") {
+                            alreadyTaken = true;
+                        }
+                    });
+                }
+                if (alreadyTaken) {
+                    // حرّر القفل لأن التوقيت محجوز أصلاً
+                    await remove(lref).catch(() => { });
+                    errsBox.innerHTML = "• هذا الوقت محجوز بالفعل. اختر وقتًا آخر.";
+                    errsBox.style.display = "block";
+                    await fillTimeOptions(date);
+                    return;
+                }
+
+                // 3) إنشاء الحجز
+                const newRef = push(ref(db, "bookings"));
+                await set(newRef, {
+                    name, phone, barber, service, date, time,
+                    status: "pending",
+                    createdAt: Date.now()
+                });
+
+                // 4) إزالة القفل فور حفظ الحجز (الواجهة ستمنع التكرار لأنه صار محجوز)
+                await remove(lref).catch(() => { });
+
+                // 5) تحديث الواجهة
+                e.target.reset();
+                afterMsg.style.display = "block";
+                await fillTimeOptions(date);
+
+            } catch (err) {
+                // في الأخطاء، حاول تحرير القفل كتنظيف احتياطي
+                await remove(lref).catch(() => { });
+                errsBox.innerHTML = "• حدث خطأ غير متوقع. أعد المحاولة.";
+                errsBox.style.display = "block";
+                console.error(err);
+            }
         });
     </script>
 </body>
