@@ -319,7 +319,11 @@
 
         const $ = s => document.querySelector(s);
         const toastEl = $("#toast");
-        function toast(msg, ms = 3000) { toastEl.innerHTML = msg; toastEl.style.display = "block"; setTimeout(() => toastEl.style.display = "none", ms); }
+        function toast(msg, ms = 3000) {
+            toastEl.innerHTML = msg;
+            toastEl.style.display = "block";
+            setTimeout(() => toastEl.style.display = "none", ms);
+        }
 
         // عناصر الإعدادات
         const defStart = $("#defStart"), defEnd = $("#defEnd"), step15 = $("#step15"), step30 = $("#step30");
@@ -435,28 +439,52 @@
             hair: "حلاقة شعر", face: "حلاقة وجه", hair_face: "حلاقة شعر ووجه", kids: "حلاقة أطفال",
             keratin: "كيرياتين", protein: "بروتين", botox: "بوتكس", collagen: "كولاجين",
             skin_normal: "تنظيف بشرة عادي", skin_deep: "تنظيف بشرة عميق", hydrafacial: "Hydrafacial",
-            vip_shave: "حلاقة VIP", color: "صباغة"
+            vip_shave: "حلاقة VIP", color: "صباغة",
+            groom_package: "باقة العريس"
+        };
+
+        const groomPlanNames = {
+            normal: "الباقة العادية",
+            silver: "الباقة الفضية",
+            gold: "الباقة الذهبية",
+            vip: "باقة VIP"
         };
 
         function renderBookings(list) {
             tbody.innerHTML = "";
-            if (!list.length) { tbody.innerHTML = '<tr><td colspan="7" class="muted">لا توجد حجوزات</td></tr>'; bkState.textContent = ""; return; }
+            if (!list.length) {
+                tbody.innerHTML = '<tr><td colspan="7" class="muted">لا توجد حجوزات</td></tr>';
+                bkState.textContent = "";
+                return;
+            }
             list.sort((a, b) => ((a.date || "") + (a.time || "")).localeCompare((b.date || "") + (b.time || "")));
             list.forEach(b => {
-                const id = b._id; const s = serviceNames[b.service] || b.service || "";
+                const id = b._id;
+                const isGroom = (b.service === "groom_package");
+                let s;
+                if (isGroom) {
+                    const planLabel = groomPlanNames[b.groomPlan] || "";
+                    s = planLabel ? `باقة العريس - ${planLabel}` : "باقة العريس";
+                } else {
+                    s = serviceNames[b.service] || b.service || "";
+                }
                 const pill = `<span class="pill ${b.status || 'pending'}">${b.status || 'pending'}</span>`;
                 const tr = document.createElement("tr");
+                const timeCell = isGroom && !b.time ? "—" : (b.time || "");
+                const groomInfo = isGroom && b.groomName
+                    ? `<div class="muted">العريس: ${b.groomName}${b.groomPhone ? " - " + b.groomPhone : ""}</div>`
+                    : "";
                 tr.innerHTML = `
-              <td>${b.name || ""}</td>
-              <td>${b.phone || ""}</td>
-              <td>${s}</td>
-              <td>${b.date || ""}</td>
-              <td>${b.time || ""}</td>
-              <td>${pill}</td>
-              <td style="white-space:nowrap">
-                <button type="button" class="primary" data-ok="${id}">تأكيد</button>
-                <button type="button" class="warn" data-no="${id}">رفض</button>
-              </td>`;
+                  <td>${b.name || ""}${groomInfo}</td>
+                  <td>${b.phone || ""}</td>
+                  <td>${s}</td>
+                  <td>${b.date || ""}</td>
+                  <td>${timeCell}</td>
+                  <td>${pill}</td>
+                  <td style="white-space:nowrap">
+                    <button type="button" class="primary" data-ok="${id}">تأكيد</button>
+                    <button type="button" class="warn" data-no="${id}">رفض</button>
+                  </td>`;
                 tbody.appendChild(tr);
             });
             bkState.textContent = "عدد الحجوزات: " + list.length;
@@ -507,29 +535,56 @@
             const isOk = btn.hasAttribute("data-ok");
             const id = isOk ? btn.dataset.ok : btn.dataset.no;
 
-            const row = btn.closest("tr");
-            const cells = row.querySelectorAll("td");
-            const name = cells[0]?.textContent.trim() || "";
-            const phone = cells[1]?.textContent.trim() || "";
-            const service = cells[2]?.textContent.trim() || "";
-            const date = cells[3]?.textContent.trim() || "";
-            const time = cells[4]?.textContent.trim() || "";
+            // قراءة الحجز من قاعدة البيانات للحصول على بيانات باقة العريس إن وجدت
+            const snap = await get(ref(db, "bookings/" + id));
+            const bk = snap.exists() ? snap.val() : {};
+            const isGroom = bk.service === "groom_package";
+
+            const name = bk.name || "";
+            const phone = bk.phone || "";
+            const serviceRaw = bk.service || "";
+            const date = bk.date || "";
+            const time = bk.time || "";
 
             if (isOk) {
                 await update(ref(db, "bookings/" + id), { status: "confirmed" });
-                const msg = `تم تأكيد موعدك في ANAS BARBER ✅
+
+                let msg;
+                if (isGroom) {
+                    const planLabel = groomPlanNames[bk.groomPlan] || "غير محددة";
+                    msg = `تم تأكيد حجز باقة العريس في ANAS BARBER ✅
+اسم صاحب الحجز: ${name}
+اسم العريس: ${bk.groomName || ""}
+الباقة: ${planLabel}
+تاريخ المناسبة: ${date}
+سيتم التنسيق معك لتحديد الوقت المناسب.`;
+                } else {
+                    const serviceText = serviceNames[serviceRaw] || serviceRaw;
+                    msg = `تم تأكيد موعدك في ANAS BARBER ✅
 الاسم: ${name}
-الخدمة: ${service}
+الخدمة: ${serviceText}
 التاريخ: ${date}
 الوقت: ${time}
 نراك في الموعد بإذن الله.`;
+                }
+
                 openViaWhatsApp(phone, msg);
                 toast("تم تأكيد الحجز وإعداد رسالة واتساب جاهزة");
             } else {
                 await update(ref(db, "bookings/" + id), { status: "rejected" });
-                const msg = `نعتذر ${name}،
-لم نتمكن من تأكيد موعد ${date} الساعة ${time}.
+
+                let msg;
+                if (isGroom) {
+                    msg = `نعتذر ${name}،
+لم نتمكن من تأكيد حجز باقة العريس بتاريخ ${date}.
+يرجى التواصل لاختيار موعد آخر مناسب.`;
+                } else {
+                    const serviceText = serviceNames[serviceRaw] || serviceRaw;
+                    msg = `نعتذر ${name}،
+لم نتمكن من تأكيد موعد ${date} الساعة ${time} لخدمة ${serviceText}.
 يرجى اختيار وقت آخر وسنخدمك بكل سرور.`;
+                }
+
                 openViaWhatsApp(phone, msg);
                 toast("تم رفض الحجز وإعداد رسالة واتساب جاهزة");
             }
@@ -537,7 +592,7 @@
             loadAllBookings();
         });
 
-        // تذكير داخلي قبل الموعد بساعة
+        // تذكير داخلي قبل الموعد بساعة (للحجوزات العادية فقط التي لها وقت)
         let reminderOn = false;
         reminderToggle.addEventListener("change", () => { reminderOn = reminderToggle.checked; });
         setInterval(async () => {
@@ -548,6 +603,7 @@
             snap.forEach(c => {
                 const b = c.val();
                 if (b?.status !== "confirmed" || !b.date || !b.time || !b.phone) return;
+                if (b.service === "groom_package") return; // نتجاهل باقة العريس لأنها بدون وقت
                 const [hh, mm] = b.time.split(":").map(Number);
                 const ts = new Date(`${b.date}T${String(hh).padStart(2, "0")}:${String(mm).padStart(2, "0")}:00`).getTime();
                 if (ts >= from && ts <= to) due.push(b);
@@ -563,3 +619,4 @@
     </script>
 </body>
 </html>
+```0

@@ -112,7 +112,8 @@
             border-radius: 14px
         }
 
-            form#bookForm input, form#bookForm select {
+            form#bookForm input,
+            form#bookForm select {
                 width: 100%;
                 padding: 12px;
                 border-radius: 12px;
@@ -186,18 +187,52 @@
             border-top: 1px solid var(--stroke);
             padding: 24px 0
         }
+
+        /* الشريط العريض من يمين الموقع لليسار */
+        .strip-wrap {
+            width: 100%;
+            margin-top: -10px;
+            margin-bottom: 20px;
+        }
+
+        .strip-inner {
+            width: 100%;
+            overflow: hidden;
+            border-radius: 0;
+            transform: translateY(40px);
+            opacity: 0;
+            animation: stripUp 1.1s ease-out 0.5s forwards;
+        }
+
+            .strip-inner img {
+                display: block;
+                width: 100%;
+                height: auto;
+                object-fit: cover;
+            }
+
+        @keyframes stripUp {
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
     </style>
 </head>
 <body>
     <header>
         <div class="container nav">
             <div class="brand">
-                <img src="assets/logo.png" alt="ANAS BARBER" style="width:38px;height:38px;border-radius:10px;object-fit:cover">
+                <img src="assets/logo.png" alt="ANAS BARBER"
+                     style="width:38px;height:38px;border-radius:10px;object-fit:cover">
                 <h1>ANAS BARBER | الحجز الإلكتروني</h1>
             </div>
             <div style="display:flex;gap:8px">
                 <a class="btn" href="login.html">لوحة الإدارة</a>
-                <button class="btn primary" onclick="document.getElementById('booking').scrollIntoView({behavior:'smooth'})">احجز الآن</button>
+                <button class="btn primary"
+                        onclick="document.getElementById('booking').scrollIntoView({behavior:'smooth'})">
+                    احجز الآن
+                </button>
             </div>
         </div>
     </header>
@@ -205,9 +240,18 @@
     <section class="container hero-arch">
         <div>
             <h1 class="hero-title">DIFFERENT <span class="accent">BARBER</span><br>EXPERIENCE</h1>
-            <p style="color:#cfd3dc">احجز موعدك مع ANAS BARBER بتصميم ذهبي وحركة ناعمة.</p>
+            <p style="color:#cfd3dc">احجز موعدك مع ANAS BARBER وانسى فكرت انتظار.</p>
         </div>
-        <div><img src="assets/head.png" alt="ANAS BARBER" style="max-width:100%;border-radius:20px"></div>
+        <div>
+            <img src="assets/head.png" alt="ANAS BARBER" style="max-width:100%;border-radius:20px">
+        </div>
+    </section>
+
+    <!-- الشريط الغلاف من يمين الصفحة لليسار -->
+    <section class="strip-wrap">
+        <div class="strip-inner">
+            <img src="assets/strip-motion.png" alt="ANAS BARBER MOTION STRIP">
+        </div>
     </section>
 
     <section id="booking" class="container">
@@ -224,13 +268,15 @@
                 </label>
 
                 <label style="display:grid;gap:6px">
-                    <span>اسم العميل</span>
+                    <span>اسم الزبون</span>
                     <input id="client" name="client" required>
                 </label>
 
                 <label style="display:grid;gap:6px">
                     <span>رقم الهاتف</span>
-                    <input id="phone" name="phone" inputmode="tel" required pattern="^[0-9+\\-\\s()]{6,}$" placeholder="+218 xx xxx xxxx">
+                    <input id="phone" name="phone" inputmode="tel"
+                           required pattern="^[0-9+\-\s()]{6,}$"
+                           placeholder="+218 xx xxx xxxx">
                 </label>
 
                 <label style="display:grid;gap:6px">
@@ -253,12 +299,52 @@
                 </label>
             </div>
 
+            <!-- Checkbox باقة العريس -->
+            <label style="display:flex;align-items:center;gap:10px;margin-top:8px">
+                <input type="checkbox" id="groomToggle" style="width:20px;height:20px">
+                <span style="font-weight:600">إضافة باقة العريس</span>
+            </label>
+
+            <!-- صندوق تفاصيل باقة العريس -->
+            <div id="groomExtra" class="grid2"
+                 style="margin-top:10px;display:none;border:1px solid #353c4c;border-radius:12px;
+                    padding:12px;background:#10141f;gap:8px">
+                <h4 style="grid-column:1/-1;margin:0 0 6px 0;font-size:15px">تفاصيل باقة العريس</h4>
+
+                <label style="display:grid;gap:6px">
+                    <span>اسم العريس</span>
+                    <input id="groomName" name="groomName">
+                </label>
+
+                <label style="display:grid;gap:6px">
+                    <span>رقم هاتف العريس</span>
+                    <input id="groomPhone" name="groomPhone" inputmode="tel"
+                           placeholder="+218 xx xxx xxxx">
+                </label>
+
+                <label style="display:grid;gap:6px">
+                    <span>نوع الباقة</span>
+                    <select id="groomPlan" name="groomPlan">
+                        <option value="">— اختر الباقة —</option>
+                        <option value="normal">الباقة العادية</option>
+                        <option value="silver">الباقة الفضية</option>
+                        <option value="gold">الباقة الذهبية</option>
+                        <option value="vip">باقة VIP</option>
+                    </select>
+                </label>
+
+                <p class="note" style="grid-column:1/-1;margin-top:4px">
+                    ملاحظة: يجب ألا يكون حجز باقة العريس قبل موعد العرس بأقل من أسبوع.
+                </p>
+            </div>
+
             <label style="display:grid;gap:6px;margin-top:6px">
                 <span>التاريخ</span>
                 <input id="date" type="date" required>
             </label>
 
-            <div style="margin-top:10px">
+            <!-- قسم الوقت الكامل، نخفيه عند اختيار باقة العريس -->
+            <div id="timeSection" style="margin-top:10px">
                 <span>اختيار الساعة</span>
                 <div id="timeGrid" class="time-grid"></div>
                 <p id="noTimes">لا توجد مواعيد متاحة لهذا اليوم</p>
@@ -266,12 +352,17 @@
             </div>
 
             <div id="formErrors"></div>
-            <button class="btn primary" type="submit" style="margin-top:10px">إرسال الطلب</button>
-            <p class="note" id="afterMsg" style="display:none;margin-top:6px">تم استلام حجزك، وسيتم تأكيده قريبًا عبر واتساب.</p>
+            <button class="btn primary" type="submit" style="margin-top:10px">
+                إرسال الطلب
+            </button>
+            <p class="note" id="afterMsg"
+               style="display:none;margin-top:6px">
+                تم استلام حجزك، وسيتم تأكيده قريبًا عبر واتساب.
+            </p>
         </form>
     </section>
 
-    <footer>© 2025 ANAS BARBER | واجهة حجز مرتبطة بـ Firebase</footer>
+    <footer>© 2026 ANAS BARBER</footer>
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
@@ -296,24 +387,81 @@
         const dateInput = document.getElementById("date");
         const timeGrid = document.getElementById("timeGrid");
         const timeInput = document.getElementById("time");
+        const timeSection = document.getElementById("timeSection");
         const noTimes = document.getElementById("noTimes");
         const errsBox = document.getElementById("formErrors");
         const afterMsg = document.getElementById("afterMsg");
         const configState = document.getElementById("configState");
 
-        // ====== إعداد قفل المواعيد لمنع الحجز المزدوج لنفس اللحظة ======
-        const LOCK_TTL_MS = 2 * 60 * 1000; // صلاحية القفل دقيقتان
+        // عناصر الحقول الأساسية
+        const barberSelect = document.getElementById("barber");
+        const clientInput = document.getElementById("client");
+        const phoneInput = document.getElementById("phone");
+        const serviceSelect = document.getElementById("service");
+
+        // عناصر باقة العريس
+        const groomToggle = document.getElementById("groomToggle");
+        const groomBox = document.getElementById("groomExtra");
+        const groomNameInput = document.getElementById("groomName");
+        const groomPhoneInput = document.getElementById("groomPhone");
+        const groomPlanSelect = document.getElementById("groomPlan");
+
+        // إظهار/إخفاء باقة العريس وتعطيل/تفعيل الحقول الأساسية + إخفاء/إظهار الوقت
+        groomToggle.addEventListener("change", () => {
+            if (groomToggle.checked) {
+                groomBox.style.display = "grid";
+
+                // تعطيل الحقول الأساسية
+                serviceSelect.dataset.oldValue = serviceSelect.value;
+                serviceSelect.value = "";
+                serviceSelect.disabled = true;
+
+                barberSelect.disabled = true;
+                clientInput.readOnly = true;
+                phoneInput.readOnly = true;
+
+                // إخفاء قسم الوقت وعدم إجبار العميل عليه
+                timeSection.style.display = "none";
+                timeInput.value = "";
+            } else {
+                groomBox.style.display = "none";
+
+                // إعادة تفعيل الحقول الأساسية
+                serviceSelect.disabled = false;
+                if (serviceSelect.dataset.oldValue) {
+                    serviceSelect.value = serviceSelect.dataset.oldValue;
+                }
+
+                barberSelect.disabled = false;
+                clientInput.readOnly = false;
+                phoneInput.readOnly = false;
+
+                // إظهار قسم الوقت لحجز الحلاق العادي
+                timeSection.style.display = "block";
+
+                // تنظيف بيانات باقة العريس
+                groomNameInput.value = "";
+                groomPhoneInput.value = "";
+                groomPlanSelect.value = "";
+            }
+        });
+
+        const LOCK_TTL_MS = 2 * 60 * 1000;
         const slotKey = (date, time) => `${date}/${time.replace(':', '-')}`;
         const lockRefOf = (date, time) => ref(db, `locks/${slotKey(date, time)}`);
 
         const pad = n => String(n).padStart(2, "0");
         const toMin = t => { const [h, m] = t.split(":").map(Number); return h * 60 + m; };
         const fromMin = m => { m = (m % 1440 + 1440) % 1440; return `${pad(Math.floor(m / 60))}:${pad(m % 60)}`; };
-        function to12(t) { let [h, m] = t.split(":").map(Number); const s = h >= 12 ? "م" : "ص"; h = ((h + 11) % 12) + 1; return `${pad(h)}:${pad(m)} ${s}`; }
+        function to12(t) {
+            let [h, m] = t.split(":").map(Number);
+            const s = h >= 12 ? "م" : "ص";
+            h = ((h + 11) % 12) + 1;
+            return `${pad(h)}:${pad(m)} ${s}`;
+        }
 
-        // توحيد رقم الهاتف (لليبيا): أرقام فقط + حذف 0 في البداية + إضافة 218 لو ناقصة
         function normalizePhone(p) {
-            let n = String(p || "").replace(/\D/g, ""); // أرقام فقط
+            let n = String(p || "").replace(/\D/g, "");
             if (!n) return "";
             if (n.startsWith("0")) n = n.slice(1);
             if (!n.startsWith("218")) n = "218" + n;
@@ -329,7 +477,6 @@
             fillTimeOptions(dateInput.value);
         });
 
-        // توليد أوقات
         function generateSlots(st, en, step) {
             const slots = [], seen = new Set();
             let s = toMin(st), e = toMin(en);
@@ -350,14 +497,19 @@
         function scheduleFor(dateStr) {
             const wd = new Date(dateStr).getDay();
             const w = CFG.byWeekday?.[wd];
-            return { start: (w?.start || CFG.defaultHours.start), end: (w?.end || CFG.defaultHours.end), step: (CFG.step || 30) };
+            return {
+                start: (w?.start || CFG.defaultHours.start),
+                end: (w?.end || CFG.defaultHours.end),
+                step: (CFG.step || 30)
+            };
         }
 
         async function fillTimeOptions(dateStr) {
-            timeGrid.innerHTML = ""; timeInput.value = ""; noTimes.style.display = "none";
+            timeGrid.innerHTML = "";
+            timeInput.value = "";
+            noTimes.style.display = "none";
             if (!dateStr) return;
 
-            // 1) أوقات محجوزة
             const booked = new Set();
             const bSnap = await get(ref(db, "bookings"));
             if (bSnap.exists()) {
@@ -369,7 +521,6 @@
                 });
             }
 
-            // 2) أقفال نشِطة
             const now = Date.now();
             const locked = new Set();
             const lSnap = await get(ref(db, `locks/${dateStr}`));
@@ -381,7 +532,6 @@
                 });
             }
 
-            // 3) بناء الشبكة
             const closed = new Set(CFG.closed?.[dateStr] || []);
             const { start, end, step } = scheduleFor(dateStr);
             const slots = generateSlots(start, end, step);
@@ -411,41 +561,66 @@
             if (!free) noTimes.style.display = "block";
         }
 
-        // تاريخ اليوم
         const today = new Date().toISOString().slice(0, 10);
         dateInput.min = today;
         dateInput.value = today;
         dateInput.addEventListener("change", e => fillTimeOptions(e.target.value));
 
-        // إرسال الحجز (مع قفل + حد حجزين فقط لكل رقم في اليوم)
+        // إرسال الحجز
         document.getElementById("bookForm").addEventListener("submit", async (e) => {
             e.preventDefault();
             errsBox.style.display = "none";
             errsBox.innerHTML = "";
             afterMsg.style.display = "none";
 
-            const name = document.getElementById("client").value.trim();
-            const phone = document.getElementById("phone").value.trim();
-            const barber = document.getElementById("barber").value;
-            const service = document.getElementById("service").value;
-            const date = document.getElementById("date").value;
-            const time = document.getElementById("time").value;
+            const name = clientInput.value.trim();
+            const phone = phoneInput.value.trim();
+            const barber = barberSelect.value;
+            const serviceRaw = serviceSelect.value;
+            const date = dateInput.value;
+            const time = timeInput.value;
+
+            const isGroom = groomToggle.checked;
+            const service = isGroom ? "groom_package" : serviceRaw;
+
+            // قيم باقة العريس
+            const groomName = groomNameInput.value.trim();
+            const groomPhone = groomPhoneInput.value.trim();
+            const groomPlan = groomPlanSelect.value;
 
             const msgs = [];
-            if (!name || !phone || !barber || !service || !date || !time)
-                msgs.push("يرجى تعبئة جميع الحقول واختيار وقت متاح.");
-            if (!e.target.checkValidity())
+
+            // حجز عادي (ليس باقة عريس): كل الحقول + الوقت + الخدمة إلزامية
+            if (!isGroom) {
+                if (!name || !phone || !barber || !service || !date || !time) {
+                    msgs.push("يرجى تعبئة جميع الحقول الأساسية، واختيار الخدمة، واختيار وقت متاح.");
+                }
+            }
+
+            // حجز باقة عريس: نطلب الأساسيات + بيانات العريس، بدون وقت
+            if (isGroom) {
+                if (!name || !phone || !barber || !date) {
+                    msgs.push("يرجى تعبئة الحقول الأساسية.");
+                }
+                if (!groomName || !groomPhone || !groomPlan) {
+                    msgs.push("يرجى إدخال بيانات باقة العريس كاملة (اسم العريس، رقم العريس، نوع الباقة).");
+                }
+            }
+
+            // التحقق من صيغة رقم الهاتف (الزبون)
+            if (!e.target.checkValidity()) {
                 msgs.push("تحقق من صيغة رقم الهاتف.");
+            }
+
             if (msgs.length) {
                 errsBox.innerHTML = msgs.map(m => "• " + m).join("<br>");
                 errsBox.style.display = "block";
                 return;
             }
 
-            // توحيد الرقم
             const normPhone = normalizePhone(phone);
 
-            // 1) فحص حد الحجز اليومي (2 فقط لنفس الرقم في نفس التاريخ)
+            // حد حجزين في اليوم لنفس الرقم (سواء حجز عادي أو باقة عريس)
             const allSnap = await get(ref(db, "bookings"));
             let dayCount = 0;
             if (allSnap.exists()) {
@@ -463,62 +638,88 @@
                 return;
             }
 
-            const lref = lockRefOf(date, time);
+            // للحجوزات العادية فقط نستخدم قفل الوقت
+            const lref = isGroom ? null : lockRefOf(date, time);
 
             try {
-                // 2) قفل على (التاريخ، الوقت)
-                const tx = await runTransaction(
-                    lref,
-                    (curr) => {
-                        if (curr && curr.booked) return;  // في حد سبقك
-                        return { booked: true, ts: Date.now(), time };
-                    },
-                    { applyLocally: false }
-                );
+                if (!isGroom) {
+                    // قفل الموعد
+                    const tx = await runTransaction(
+                        lref,
+                        (curr) => {
+                            if (curr && curr.booked) return;
+                            return { booked: true, ts: Date.now(), time };
+                        },
+                        { applyLocally: false }
+                    );
 
-                if (!tx.committed) {
-                    errsBox.innerHTML = "• عذرًا، تم حجز هذا الوقت للتو. اختر وقتًا آخر.";
-                    errsBox.style.display = "block";
-                    await fillTimeOptions(date);
-                    return;
+                    if (!tx.committed) {
+                        errsBox.innerHTML = "• عذرًا، تم حجز هذا الوقت للتو. اختر وقتًا آخر.";
+                        errsBox.style.display = "block";
+                        await fillTimeOptions(date);
+                        return;
+                    }
+
+                    // تأكيد إضافي أن التوقيت غير محجوز
+                    const daySnap2 = await get(ref(db, "bookings"));
+                    let alreadyTaken = false;
+                    if (daySnap2.exists()) {
+                        daySnap2.forEach(c => {
+                            const v = c.val();
+                            if (v?.date === date && v?.time === time && v?.status !== "rejected") {
+                                alreadyTaken = true;
+                            }
+                        });
+                    }
+                    if (alreadyTaken) {
+                        await remove(lref).catch(() => { });
+                        errsBox.innerHTML = "• هذا الوقت محجوز بالفعل. اختر وقتًا آخر.";
+                        errsBox.style.display = "block";
+                        await fillTimeOptions(date);
+                        return;
+                    }
                 }
 
-                // 3) تأكيد أنه لا يوجد حجز سابق لنفس الدقيقة (احتياط)
-                const daySnap2 = await get(ref(db, "bookings"));
-                let alreadyTaken = false;
-                if (daySnap2.exists()) {
-                    daySnap2.forEach(c => {
-                        const v = c.val();
-                        if (v?.date === date && v?.time === time && v?.status !== "rejected") {
-                            alreadyTaken = true;
-                        }
-                    });
-                }
-                if (alreadyTaken) {
-                    await remove(lref).catch(() => { });
-                    errsBox.innerHTML = "• هذا الوقت محجوز بالفعل. اختر وقتًا آخر.";
-                    errsBox.style.display = "block";
-                    await fillTimeOptions(date);
-                    return;
-                }
-
-                // 4) إنشاء الحجز (مع حفظ normPhone)
+                // إنشاء الحجز (عادي أو باقة عريس)
                 const newRef = push(ref(db, "bookings"));
                 await set(newRef, {
-                    name, phone, normPhone,
-                    barber, service, date, time,
+                    name,
+                    phone,
+                    normPhone,
+                    barber,
+                    service,
+                    date,
+                    time: isGroom ? null : time,
+                    groomName: isGroom ? groomName : null,
+                    groomPhone: isGroom ? groomPhone : null,
+                    groomPlan: isGroom ? groomPlan : null,
                     status: "pending",
                     createdAt: Date.now()
                 });
 
-                // 5) إزالة القفل وتحديث الواجهة
-                await remove(lref).catch(() => { });
+                // تحرير القفل لو كان حجز عادي
+                if (!isGroom && lref) {
+                    await remove(lref).catch(() => { });
+                }
+
                 e.target.reset();
+
+                // إعادة الحالة الافتراضية بعد الإرسال
+                groomBox.style.display = "none";
+                serviceSelect.disabled = false;
+                barberSelect.disabled = false;
+                clientInput.readOnly = false;
+                phoneInput.readOnly = false;
+                groomToggle.checked = false;
+                timeSection.style.display = "block";
+
                 afterMsg.style.display = "block";
                 await fillTimeOptions(date);
 
             } catch (err) {
-                await remove(lref).catch(() => { });
+                if (!isGroom && lref) {
+                    await remove(lref).catch(() => { });
+                }
                 errsBox.innerHTML = "• حدث خطأ غير متوقع. أعد المحاولة.";
                 errsBox.style.display = "block";
                 console.error(err);
