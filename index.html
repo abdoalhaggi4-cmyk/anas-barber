@@ -573,6 +573,13 @@
             errsBox.innerHTML = "";
             afterMsg.style.display = "none";
 
+            const isGroom = groomToggle.checked;
+
+            // ضبط required حسب نوع الحجز
+            clientInput.required = !isGroom;
+            phoneInput.required = !isGroom;
+            serviceSelect.required = !isGroom;
+
             const name = clientInput.value.trim();
             const phone = phoneInput.value.trim();
             const barber = barberSelect.value;
@@ -580,7 +587,6 @@
             const date = dateInput.value;
             const time = timeInput.value;
 
-            const isGroom = groomToggle.checked;
             const service = isGroom ? "groom_package" : serviceRaw;
 
             // قيم باقة العريس
@@ -590,25 +596,22 @@
 
             const msgs = [];
 
-            // حجز عادي (ليس باقة عريس): كل الحقول + الوقت + الخدمة إلزامية
+            // حجز عادي
             if (!isGroom) {
                 if (!name || !phone || !barber || !service || !date || !time) {
                     msgs.push("يرجى تعبئة جميع الحقول الأساسية، واختيار الخدمة، واختيار وقت متاح.");
                 }
             }
 
-            // حجز باقة عريس: نطلب الأساسيات + بيانات العريس، بدون وقت
+            // حجز باقة العريس (بدون وقت، لكن بتاريخ إلزامي)
             if (isGroom) {
-                if (!name || !phone || !barber || !date) {
-                    msgs.push("يرجى تعبئة الحقول الأساسية.");
-                }
-                if (!groomName || !groomPhone || !groomPlan) {
-                    msgs.push("يرجى إدخال بيانات باقة العريس كاملة (اسم العريس، رقم العريس، نوع الباقة).");
+                if (!groomName || !groomPhone || !groomPlan || !date) {
+                    msgs.push("يرجى إدخال بيانات باقة العريس كاملة (اسم العريس، رقم العريس، نوع الباقة) مع اختيار تاريخ.");
                 }
             }
 
-            // التحقق من صيغة رقم الهاتف (الزبون)
-            if (!e.target.checkValidity()) {
+            // فحص صيغة رقم الهاتف (العميل) فقط لو موجود
+            if (!isGroom && !e.target.checkValidity()) {
                 msgs.push("تحقق من صيغة رقم الهاتف.");
             }
 
@@ -618,9 +621,11 @@
                 return;
             }
 
-            const normPhone = normalizePhone(phone);
+            // نستخدم رقم العميل، ولو كان فاضي في باقة العريس نستخدم رقم العريس
+            const mainPhone = phone || groomPhone;
+            const normPhone = normalizePhone(mainPhone);
 
-            // حد حجزين في اليوم لنفس الرقم (سواء حجز عادي أو باقة عريس)
+            // حد حجزين في اليوم لنفس الرقم
             const allSnap = await get(ref(db, "bookings"));
             let dayCount = 0;
             if (allSnap.exists()) {
@@ -628,7 +633,7 @@
                     const v = c.val();
                     if (!v || v.status === "rejected") return;
                     if (v.date !== date) return;
-                    const vp = v.normPhone || normalizePhone(v.phone);
+                    const vp = v.normPhone || normalizePhone(v.phone || v.groomPhone);
                     if (vp === normPhone) dayCount++;
                 });
             }
@@ -638,12 +643,27 @@
                 return;
             }
 
-            // للحجوزات العادية فقط نستخدم قفل الوقت
-            const lref = isGroom ? null : lockRefOf(date, time);
+            // إنشاء بيانات الحجز المشتركة
+            const payload = {
+                name,
+                phone,
+                normPhone,
+                barber,
+                service,
+                date,
+                time: isGroom ? "" : time,  // باقة العريس بدون وقت
+                groomName: isGroom ? groomName : null,
+                groomPhone: isGroom ? groomPhone : null,
+                groomPlan: isGroom ? groomPlan : null,
+                status: "pending",
+                createdAt: Date.now()
+            };
 
-            try {
-                if (!isGroom) {
-                    // قفل الموعد
+            // لو حجز عادي → نستعمل نظام القفل والوقت
+            if (!isGroom) {
+                const lref = lockRefOf(date, time);
+
+                try {
                     const tx = await runTransaction(
                         lref,
                         (curr) => {
@@ -660,7 +680,6 @@
                         return;
                     }
 
-                    // تأكيد إضافي أن التوقيت غير محجوز
                     const daySnap2 = await get(ref(db, "bookings"));
                     let alreadyTaken = false;
                     if (daySnap2.exists()) {
@@ -678,52 +697,35 @@
                         await fillTimeOptions(date);
                         return;
                     }
-                }
 
-                // إنشاء الحجز (عادي أو باقة عريس)
+                    const newRef = push(ref(db, "bookings"));
+                    await set(newRef, payload);
+
+                    await remove(lref).catch(() => { });
+                } catch (err) {
+                    await remove(lref).catch(() => { });
+                    errsBox.innerHTML = "• حدث خطأ غير متوقع. أعد المحاولة.";
+                    errsBox.style.display = "block";
+                    console.error(err);
+                    return;
+                }
+            } else {
+                // باقة العريس → تخزين مباشر بدون وقت وبدون قفل
                 const newRef = push(ref(db, "bookings"));
-                await set(newRef, {
-                    name,
-                    phone,
-                    normPhone,
-                    barber,
-                    service,
-                    date,
-                    time: isGroom ? null : time,
-                    groomName: isGroom ? groomName : null,
-                    groomPhone: isGroom ? groomPhone : null,
-                    groomPlan: isGroom ? groomPlan : null,
-                    status: "pending",
-                    createdAt: Date.now()
-                });
-
-                // تحرير القفل لو كان حجز عادي
-                if (!isGroom && lref) {
-                    await remove(lref).catch(() => { });
-                }
-
-                e.target.reset();
-
-                // إعادة الحالة الافتراضية بعد الإرسال
-                groomBox.style.display = "none";
-                serviceSelect.disabled = false;
-                barberSelect.disabled = false;
-                clientInput.readOnly = false;
-                phoneInput.readOnly = false;
-                groomToggle.checked = false;
-                timeSection.style.display = "block";
-
-                afterMsg.style.display = "block";
-                await fillTimeOptions(date);
-
-            } catch (err) {
-                if (!isGroom && lref) {
-                    await remove(lref).catch(() => { });
-                }
-                errsBox.innerHTML = "• حدث خطأ غير متوقع. أعد المحاولة.";
-                errsBox.style.display = "block";
-                console.error(err);
+                await set(newRef, payload);
             }
+
+            // إعادة ضبط النموذج
+            e.target.reset();
+            groomBox.style.display = "none";
+            serviceSelect.disabled = false;
+            barberSelect.disabled = false;
+            clientInput.readOnly = false;
+            phoneInput.readOnly = false;
+            groomToggle.checked = false;
+
+            afterMsg.style.display = "block";
+            await fillTimeOptions(date);
         });
     </script>
 </body>
