@@ -393,7 +393,7 @@
         const afterMsg = document.getElementById("afterMsg");
         const configState = document.getElementById("configState");
 
-        // عناصر الحقول الأساسية
+        // الحقول الأساسية
         const barberSelect = document.getElementById("barber");
         const clientInput = document.getElementById("client");
         const phoneInput = document.getElementById("phone");
@@ -406,12 +406,11 @@
         const groomPhoneInput = document.getElementById("groomPhone");
         const groomPlanSelect = document.getElementById("groomPlan");
 
-        // إظهار/إخفاء باقة العريس وتعطيل/تفعيل الحقول الأساسية + إخفاء/إظهار الوقت
+        // إظهار/إخفاء باقة العريس + التحكم في الحقول الأساسية + الوقت
         groomToggle.addEventListener("change", () => {
             if (groomToggle.checked) {
                 groomBox.style.display = "grid";
 
-                // تعطيل الحقول الأساسية
                 serviceSelect.dataset.oldValue = serviceSelect.value;
                 serviceSelect.value = "";
                 serviceSelect.disabled = true;
@@ -420,13 +419,11 @@
                 clientInput.readOnly = true;
                 phoneInput.readOnly = true;
 
-                // إخفاء قسم الوقت وعدم إجبار العميل عليه
                 timeSection.style.display = "none";
                 timeInput.value = "";
             } else {
                 groomBox.style.display = "none";
 
-                // إعادة تفعيل الحقول الأساسية
                 serviceSelect.disabled = false;
                 if (serviceSelect.dataset.oldValue) {
                     serviceSelect.value = serviceSelect.dataset.oldValue;
@@ -436,10 +433,8 @@
                 clientInput.readOnly = false;
                 phoneInput.readOnly = false;
 
-                // إظهار قسم الوقت لحجز الحلاق العادي
                 timeSection.style.display = "block";
 
-                // تنظيف بيانات باقة العريس
                 groomNameInput.value = "";
                 groomPhoneInput.value = "";
                 groomPlanSelect.value = "";
@@ -575,13 +570,13 @@
 
             const isGroom = groomToggle.checked;
 
-            // ضبط required حسب نوع الحجز
+            // required حسب نوع الحجز
             clientInput.required = !isGroom;
             phoneInput.required = !isGroom;
             serviceSelect.required = !isGroom;
 
             const name = clientInput.value.trim();
-            const phone = phoneInput.value.trim();
+            const basePhone = phoneInput.value.trim();
             const barber = barberSelect.value;
             const serviceRaw = serviceSelect.value;
             const date = dateInput.value;
@@ -589,7 +584,6 @@
 
             const service = isGroom ? "groom_package" : serviceRaw;
 
-            // قيم باقة العريس
             const groomName = groomNameInput.value.trim();
             const groomPhone = groomPhoneInput.value.trim();
             const groomPlan = groomPlanSelect.value;
@@ -598,19 +592,18 @@
 
             // حجز عادي
             if (!isGroom) {
-                if (!name || !phone || !barber || !service || !date || !time) {
+                if (!name || !basePhone || !barber || !service || !date || !time) {
                     msgs.push("يرجى تعبئة جميع الحقول الأساسية، واختيار الخدمة، واختيار وقت متاح.");
                 }
             }
 
-            // حجز باقة العريس (بدون وقت، لكن بتاريخ إلزامي)
+            // باقة العريس (بدون وقت)
             if (isGroom) {
                 if (!groomName || !groomPhone || !groomPlan || !date) {
                     msgs.push("يرجى إدخال بيانات باقة العريس كاملة (اسم العريس، رقم العريس، نوع الباقة) مع اختيار تاريخ.");
                 }
             }
 
-            // فحص صيغة رقم الهاتف (العميل) فقط لو موجود
             if (!isGroom && !e.target.checkValidity()) {
                 msgs.push("تحقق من صيغة رقم الهاتف.");
             }
@@ -621,11 +614,11 @@
                 return;
             }
 
-            // نستخدم رقم العميل، ولو كان فاضي في باقة العريس نستخدم رقم العريس
-            const mainPhone = phone || groomPhone;
+            // رقم الهاتف الفعلي
+            const mainPhone = basePhone || groomPhone;
             const normPhone = normalizePhone(mainPhone);
 
-            // حد حجزين في اليوم لنفس الرقم
+            // حد حجزين لليوم لنفس الرقم
             const allSnap = await get(ref(db, "bookings"));
             let dayCount = 0;
             if (allSnap.exists()) {
@@ -643,15 +636,14 @@
                 return;
             }
 
-            // إنشاء بيانات الحجز المشتركة
             const payload = {
                 name,
-                phone,
+                phone: mainPhone,               // الرقم الذي سيظهر في لوحة الإدارة ويُستخدم للواتساب
                 normPhone,
                 barber,
                 service,
                 date,
-                time: isGroom ? "" : time,  // باقة العريس بدون وقت
+                time: isGroom ? "" : time,
                 groomName: isGroom ? groomName : null,
                 groomPhone: isGroom ? groomPhone : null,
                 groomPlan: isGroom ? groomPlan : null,
@@ -659,7 +651,6 @@
                 createdAt: Date.now()
             };
 
-            // لو حجز عادي → نستعمل نظام القفل والوقت
             if (!isGroom) {
                 const lref = lockRefOf(date, time);
 
@@ -710,7 +701,7 @@
                     return;
                 }
             } else {
-                // باقة العريس → تخزين مباشر بدون وقت وبدون قفل
+                // باقة العريس: تخزين مباشر بدون قفل وقت
                 const newRef = push(ref(db, "bookings"));
                 await set(newRef, payload);
             }
@@ -730,3 +721,4 @@
     </script>
 </body>
 </html>
+```0

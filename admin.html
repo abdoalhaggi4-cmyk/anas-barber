@@ -461,6 +461,7 @@
             list.forEach(b => {
                 const id = b._id;
                 const isGroom = (b.service === "groom_package");
+
                 let s;
                 if (isGroom) {
                     const planLabel = groomPlanNames[b.groomPlan] || "";
@@ -468,23 +469,26 @@
                 } else {
                     s = serviceNames[b.service] || b.service || "";
                 }
+
                 const pill = `<span class="pill ${b.status || 'pending'}">${b.status || 'pending'}</span>`;
                 const tr = document.createElement("tr");
                 const timeCell = isGroom && !b.time ? "—" : (b.time || "");
+
                 const groomInfo = isGroom && b.groomName
                     ? `<div class="muted">العريس: ${b.groomName}${b.groomPhone ? " - " + b.groomPhone : ""}</div>`
                     : "";
+
                 tr.innerHTML = `
-                  <td>${b.name || ""}${groomInfo}</td>
-                  <td>${b.phone || ""}</td>
-                  <td>${s}</td>
-                  <td>${b.date || ""}</td>
-                  <td>${timeCell}</td>
-                  <td>${pill}</td>
-                  <td style="white-space:nowrap">
-                    <button type="button" class="primary" data-ok="${id}">تأكيد</button>
-                    <button type="button" class="warn" data-no="${id}">رفض</button>
-                  </td>`;
+                      <td>${b.name || ""}${groomInfo}</td>
+                      <td>${b.phone || ""}</td>
+                      <td>${s}</td>
+                      <td>${b.date || ""}</td>
+                      <td>${timeCell}</td>
+                      <td>${pill}</td>
+                      <td style="white-space:nowrap">
+                        <button type="button" class="primary" data-ok="${id}">تأكيد</button>
+                        <button type="button" class="warn" data-no="${id}">رفض</button>
+                      </td>`;
                 tbody.appendChild(tr);
             });
             bkState.textContent = "عدد الحجوزات: " + list.length;
@@ -509,7 +513,7 @@
             renderBookings(future);
         }
 
-        // ====== فتح واتساب متوافق مع iOS/Android/Desktop ======
+        // فتح واتساب
         function openViaWhatsApp(phone, text) {
             let num = String(phone || "").replace(/\D/g, "");
             if (!num) return;
@@ -527,7 +531,7 @@
             }
         }
 
-        // معالج نقر موحّد للأزرار باستخدام closest()
+        // تأكيد / رفض مع تفرقة باقة العريس
         tbody.addEventListener("click", async (e) => {
             const btn = e.target.closest("button[data-ok], button[data-no]");
             if (!btn) return;
@@ -535,23 +539,24 @@
             const isOk = btn.hasAttribute("data-ok");
             const id = isOk ? btn.dataset.ok : btn.dataset.no;
 
-            // قراءة الحجز من قاعدة البيانات للحصول على بيانات باقة العريس إن وجدت
+            // قراءة الحجز من قاعدة البيانات لنتأكد من بيانات باقة العريس
             const snap = await get(ref(db, "bookings/" + id));
             const bk = snap.exists() ? snap.val() : {};
             const isGroom = bk.service === "groom_package";
 
             const name = bk.name || "";
             const phone = bk.phone || "";
-            const serviceRaw = bk.service || "";
             const date = bk.date || "";
             const time = bk.time || "";
+            const sCode = bk.service || "";
+            const plan = bk.groomPlan || "";
 
             if (isOk) {
                 await update(ref(db, "bookings/" + id), { status: "confirmed" });
 
                 let msg;
                 if (isGroom) {
-                    const planLabel = groomPlanNames[bk.groomPlan] || "غير محددة";
+                    const planLabel = groomPlanNames[plan] || "غير محددة";
                     msg = `تم تأكيد حجز باقة العريس في ANAS BARBER ✅
 اسم صاحب الحجز: ${name}
 اسم العريس: ${bk.groomName || ""}
@@ -559,7 +564,7 @@
 تاريخ المناسبة: ${date}
 سيتم التنسيق معك لتحديد الوقت المناسب.`;
                 } else {
-                    const serviceText = serviceNames[serviceRaw] || serviceRaw;
+                    const serviceText = serviceNames[sCode] || sCode;
                     msg = `تم تأكيد موعدك في ANAS BARBER ✅
 الاسم: ${name}
 الخدمة: ${serviceText}
@@ -579,7 +584,7 @@
 لم نتمكن من تأكيد حجز باقة العريس بتاريخ ${date}.
 يرجى التواصل لاختيار موعد آخر مناسب.`;
                 } else {
-                    const serviceText = serviceNames[serviceRaw] || serviceRaw;
+                    const serviceText = serviceNames[sCode] || sCode;
                     msg = `نعتذر ${name}،
 لم نتمكن من تأكيد موعد ${date} الساعة ${time} لخدمة ${serviceText}.
 يرجى اختيار وقت آخر وسنخدمك بكل سرور.`;
@@ -592,7 +597,7 @@
             loadAllBookings();
         });
 
-        // تذكير داخلي قبل الموعد بساعة (للحجوزات العادية فقط التي لها وقت)
+        // تذكير داخلي قبل الموعد بساعة (يتجاهل باقة العريس لأنها بدون وقت)
         let reminderOn = false;
         reminderToggle.addEventListener("change", () => { reminderOn = reminderToggle.checked; });
         setInterval(async () => {
@@ -603,8 +608,9 @@
             snap.forEach(c => {
                 const b = c.val();
                 if (b?.status !== "confirmed" || !b.date || !b.time || !b.phone) return;
-                if (b.service === "groom_package") return; // نتجاهل باقة العريس لأنها بدون وقت
-                const [hh, mm] = b.time.split(":").map(Number);
+                if (b.service === "groom_package") return;
+                const [hh, mm] = (b.time || "").split(":").map(Number);
+                if (Number.isNaN(hh) || Number.isNaN(mm)) return;
                 const ts = new Date(`${b.date}T${String(hh).padStart(2, "0")}:${String(mm).padStart(2, "0")}:00`).getTime();
                 if (ts >= from && ts <= to) due.push(b);
             });
