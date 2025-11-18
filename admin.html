@@ -305,6 +305,23 @@
             <div id="spList" class="muted"></div>
         </div>
 
+        <!-- إعدادات رمضان (جديد) -->
+        <div class="card">
+            <h2>إعدادات رمضان</h2>
+            <div class="grid2">
+                <label>
+                    <span>تاريخ بداية رمضان (ميلادي)</span>
+                    <input id="ramadanStart" type="date">
+                </label>
+            </div>
+            <div class="row" style="margin-top:8px;flex-wrap:wrap;gap:8px">
+                <button id="saveRamadan" class="primary" type="button">حفظ تاريخ رمضان</button>
+                <button id="closeRamadan" class="warn" type="button">قفل العشرة الأواخر + أول يوم العيد</button>
+                <button id="openRamadan" type="button">فتح أيام رمضان</button>
+            </div>
+            <div id="ramadanInfo" class="muted"></div>
+        </div>
+
         <!-- إدارة يوم محدد -->
         <div class="card" id="perDayCard">
             <h2>إدارة أوقات يوم محدد</h2>
@@ -365,10 +382,23 @@
             setTimeout(() => toastEl.style.display = "none", ms);
         }
 
-        // === جميع الأكواد الخاصة بالنظام تبقى كما هي ===
-        // (لم ألمس أي شيء — نفس كودك تماماً)
+        // عناصر الإعدادات
+        const defStart = $("#defStart"), defEnd = $("#defEnd"), step15 = $("#step15"), step30 = $("#step30");
+        const wdDay = $("#wdDay"), wdStart = $("#wdStart"), wdEnd = $("#wdEnd"), wdList = $("#wdList");
+        const spDate = $("#spDate"), spStart = $("#spStart"), spEnd = $("#spEnd"), spList = $("#spList");
+        const ramadanStartInput = $("#ramadanStart"), ramadanInfo = $("#ramadanInfo");
+        const dayPick = $("#dayPick"), slotGrid = $("#slotGrid"), countInfo = $("#countInfo");
+        const state = $("#state");
 
-        let CFG = { step: 30, defaultHours: { start: "14:00", end: "01:00" }, byWeekday: {}, byDate: {}, closed: {} };
+        // إعدادات عامة + رمضان
+        let CFG = {
+            step: 30,
+            defaultHours: { start: "14:00", end: "01:00" },
+            byWeekday: {},
+            byDate: {},
+            closed: {},
+            ramadanStart: null
+        };
 
         onValue(ref(db, "config"), snap => {
             if (snap.exists()) CFG = { ...CFG, ...snap.val() };
@@ -377,6 +407,13 @@
             defEnd.value = CFG.defaultHours?.end || "01:00";
             step15.checked = (CFG.step === 15);
             step30.checked = (CFG.step !== 15);
+
+            if (CFG.ramadanStart) {
+                ramadanStartInput.value = CFG.ramadanStart;
+                ramadanInfo.textContent = "تاريخ بداية رمضان المحفوظ: " + CFG.ramadanStart;
+            } else {
+                ramadanInfo.textContent = "لم يتم حفظ تاريخ بداية رمضان بعد.";
+            }
 
             renderWDList();
             renderDateList();
@@ -511,6 +548,80 @@
         dayPick.value = isoToday; renderDay(isoToday);
         dayPick.addEventListener("change", () => renderDay(dayPick.value));
 
+        // ---- دالة حساب العشرة الأواخر + أول يوم العيد ----
+        function computeRamadanDates(startStr) {
+            const base = new Date(startStr + "T00:00:00");
+            if (Number.isNaN(base.getTime())) return [];
+            const out = [];
+            // من يوم 20 رمضان إلى 30 رمضان (أوفست 19 إلى 29)
+            for (let offset = 19; offset <= 29; offset++) {
+                const d = new Date(base);
+                d.setDate(d.getDate() + offset);
+                out.push(d.toISOString().slice(0, 10));
+            }
+            // أول يوم العيد (أوفست 30)
+            const eid = new Date(base);
+            eid.setDate(eid.getDate() + 30);
+            out.push(eid.toISOString().slice(0, 10));
+            return out;
+        }
+
+        // حفظ تاريخ رمضان
+        $("#saveRamadan").onclick = async () => {
+            const d = ramadanStartInput.value;
+            if (!d) { toast("اختر تاريخ بداية رمضان أولاً"); return; }
+            await update(ref(db, "config"), { ramadanStart: d });
+            CFG.ramadanStart = d;
+            ramadanInfo.textContent = "تاريخ بداية رمضان المحفوظ: " + d + " (أيام رمضان متاحة حاليًا)";
+            toast("تم حفظ تاريخ بداية رمضان");
+        };
+
+        // قفل العشرة الأواخر + أول يوم العيد
+        $("#closeRamadan").onclick = async () => {
+            const startStr = ramadanStartInput.value || CFG.ramadanStart;
+            if (!startStr) { toast("اختر أو احفظ تاريخ بداية رمضان أولاً"); return; }
+
+            const dates = computeRamadanDates(startStr);
+            if (!dates.length) { toast("تاريخ بداية رمضان غير صالح"); return; }
+
+            const ops = [];
+            for (const iso of dates) {
+                const { start, end, step } = scheduleFor(iso);
+                const slots = generateSlots(start, end, step);
+                ops.push(set(ref(db, "config/closed/" + iso), slots));
+            }
+
+            await Promise.all(ops);
+            ramadanInfo.textContent = "أيام رمضان مقفلة حاليًا: " + dates.join(" ، ");
+            toast("تم قفل العشرة الأواخر من رمضان + أول يوم العيد");
+
+            if (dayPick.value && dates.includes(dayPick.value)) {
+                renderDay(dayPick.value);
+            }
+        };
+
+        // فتح أيام رمضان
+        $("#openRamadan").onclick = async () => {
+            const startStr = ramadanStartInput.value || CFG.ramadanStart;
+            if (!startStr) { toast("اختر أو احفظ تاريخ بداية رمضان أولاً"); return; }
+
+            const dates = computeRamadanDates(startStr);
+            if (!dates.length) { toast("تاريخ بداية رمضان غير صالح"); return; }
+
+            const ops = [];
+            for (const iso of dates) {
+                ops.push(set(ref(db, "config/closed/" + iso), null));
+            }
+
+            await Promise.all(ops);
+            ramadanInfo.textContent = "أيام رمضان مفتوحة حاليًا (تم إزالة الإغلاق عن: " + dates.join(" ، ") + ")";
+            toast("تم فتح أيام رمضان والعيد");
+
+            if (dayPick.value && dates.includes(dayPick.value)) {
+                renderDay(dayPick.value);
+            }
+        };
+
         // جدول الحجوزات
         const tbody = $("#bkTableBody"), bkState = $("#bkState"), reload = $("#reloadBk"), reminderToggle = $("#reminderToggle");
 
@@ -558,16 +669,16 @@
                     : "";
 
                 tr.innerHTML = `
-                        <td>${b.name || ""}${groomInfo}</td>
-                        <td>${b.phone || ""}</td>
-                        <td>${s}</td>
-                        <td>${b.date || ""}</td>
-                        <td>${timeCell}</td>
-                        <td>${pill}</td>
-                        <td style="white-space:nowrap">
-                            <button type="button" class="primary" data-ok="${id}">تأكيد</button>
-                            <button type="button" class="warn" data-no="${id}">رفض</button>
-                        </td>`;
+                            <td>${b.name || ""}${groomInfo}</td>
+                            <td>${b.phone || ""}</td>
+                            <td>${s}</td>
+                            <td>${b.date || ""}</td>
+                            <td>${timeCell}</td>
+                            <td>${pill}</td>
+                            <td style="white-space:nowrap">
+                                <button type="button" class="primary" data-ok="${id}">تأكيد</button>
+                                <button type="button" class="warn" data-no="${id}">رفض</button>
+                            </td>`;
                 tbody.appendChild(tr);
             });
             bkState.textContent = "عدد الحجوزات: " + list.length;
