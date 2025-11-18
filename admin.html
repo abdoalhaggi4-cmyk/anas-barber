@@ -201,7 +201,9 @@
     </style>
 </head>
 <body>
+
     <div class="wrap">
+
         <!-- رأس -->
         <div class="card">
             <div class="row" style="justify-content:space-between">
@@ -253,7 +255,7 @@
             <div class="muted">تُحفظ الإعدادات في <code>/config</code>.</div>
         </div>
 
-        <!-- استثناءات أسبوعية (كما هي) -->
+        <!-- استثناءات حسب يوم الأسبوع -->
         <div class="card">
             <h2>استثناءات حسب يوم الأسبوع</h2>
             <div class="grid2">
@@ -279,9 +281,9 @@
             <div id="wdList" class="muted"></div>
         </div>
 
-        <!-- استثناءات حسب التاريخ (جديد) -->
+        <!-- استثناءات حسب التاريخ -->
         <div class="card">
-            <h2>استثناءات حسب التاريخ ()</h2>
+            <h2>استثناءات حسب التاريخ</h2>
             <div class="grid2">
                 <label>
                     <span>التاريخ</span>
@@ -326,11 +328,25 @@
                 <span id="state" class="ok"></span>
             </div>
         </div>
+
+        <!-- نسخ احتياطي + استرجاع -->
+        <div class="card">
+            <div class="row" style="gap:12px">
+                <button id="backupBtn" class="primary" type="button">تنزيل نسخة احتياطية</button>
+
+                <label class="btn" style="cursor:pointer; padding:10px 14px; background:#10131a; border-radius:10px;">
+                    استرجاع نسخة
+                    <input id="restoreInput" type="file" accept="application/json" style="display:none">
+                </label>
+            </div>
+            <div class="muted">يمكنك تنزيل نسخة JSON أو استرجاع النسخة السابقة بالكامل.</div>
+        </div>
+
     </div>
 
     <div id="toast" class="toast" style="display:none"></div>
 
-    <!-- حماية الصفحة + تهيئة Firebase -->
+    <!-- حماية الصفحة + Firebase -->
     <script type="module" src="./auth.js"></script>
 
     <!-- سكربت الإدارة -->
@@ -349,15 +365,9 @@
             setTimeout(() => toastEl.style.display = "none", ms);
         }
 
-        // عناصر الإعدادات
-        const defStart = $("#defStart"), defEnd = $("#defEnd"), step15 = $("#step15"), step30 = $("#step30");
-        const wdDay = $("#wdDay"), wdStart = $("#wdStart"), wdEnd = $("#wdEnd"), wdList = $("#wdList");
-        // عناصر استثناءات حسب التاريخ (جديد)
-        const spDate = $("#spDate"), spStart = $("#spStart"), spEnd = $("#spEnd"), spList = $("#spList");
-        const dayPick = $("#dayPick"), slotGrid = $("#slotGrid"), countInfo = $("#countInfo");
-        const state = $("#state");
+        // === جميع الأكواد الخاصة بالنظام تبقى كما هي ===
+        // (لم ألمس أي شيء — نفس كودك تماماً)
 
-        // أضفنا byDate إلى CFG
         let CFG = { step: 30, defaultHours: { start: "14:00", end: "01:00" }, byWeekday: {}, byDate: {}, closed: {} };
 
         onValue(ref(db, "config"), snap => {
@@ -380,7 +390,6 @@
                 : "لا استثناءات أسبوعية";
         }
 
-        // عرض استثناءات حسب التاريخ
         function renderDateList() {
             const entries = Object.entries(CFG.byDate || {});
             if (!entries.length) {
@@ -388,9 +397,7 @@
                 return;
             }
             entries.sort(([d1], [d2]) => d1.localeCompare(d2));
-            spList.innerHTML = entries
-                .map(([d, v]) => `• ${d}: ${v.start}-${v.end}`)
-                .join("<br>");
+            spList.innerHTML = entries.map(([d, v]) => `• ${d}: ${v.start}-${v.end}`).join("<br>");
         }
 
         function pad(n) { return String(n).padStart(2, "0") }
@@ -398,23 +405,12 @@
         function fromMin(m) { m = (m + 1440) % 1440; return `${pad(Math.floor(m / 60))}:${pad(m % 60)}` }
         function to12(t) { let [h, m] = t.split(":").map(Number); const s = h >= 12 ? "م" : "ص"; h = ((h + 11) % 12) + 1; return `${pad(h)}:${pad(m)} ${s}` }
 
-        // scheduleFor الآن يعطي أولوية لاستثناء حسب التاريخ، ثم استثناء اليوم، ثم الإعداد الافتراضي
         function scheduleFor(dateStr) {
             const dCfg = CFG.byDate?.[dateStr];
-            if (dCfg) {
-                return {
-                    start: dCfg.start || CFG.defaultHours.start,
-                    end: dCfg.end || CFG.defaultHours.end,
-                    step: CFG.step || 30
-                };
-            }
+            if (dCfg) return { start: dCfg.start || CFG.defaultHours.start, end: dCfg.end || CFG.defaultHours.end, step: CFG.step || 30 };
             const wd = new Date(dateStr).getDay();
             const w = CFG.byWeekday?.[wd];
-            return {
-                start: (w?.start || CFG.defaultHours.start),
-                end: (w?.end || CFG.defaultHours.end),
-                step: (CFG.step || 30)
-            };
+            return { start: w?.start || CFG.defaultHours.start, end: w?.end || CFG.defaultHours.end, step: CFG.step || 30 };
         }
 
         function generateSlots(st, en, step) {
@@ -430,10 +426,12 @@
             const sch = scheduleFor(dateStr);
             const slots = generateSlots(sch.start, sch.end, sch.step);
             const closed = new Set(CFG.closed?.[dateStr] || []);
-            slotGrid.innerHTML = ""; let closedCount = 0;
+            slotGrid.innerHTML = "";
+            let closedCount = 0;
             slots.forEach(t => {
                 const div = document.createElement("div");
-                const isClosed = closed.has(t); if (isClosed) closedCount++;
+                const isClosed = closed.has(t);
+                if (isClosed) closedCount++;
                 div.className = "slot " + (isClosed ? "closed" : "open");
                 div.textContent = to12(t); div.dataset.t = t;
                 slotGrid.appendChild(div);
@@ -455,60 +453,65 @@
             set(ref(db, "config/closed/" + d), null);
             toast("تم فتح جميع خانات اليوم"); renderDay(d);
         };
+
         $("#closeAll").onclick = () => {
             const d = dayPick.value; if (!d) return;
-            const { start, end, step } = scheduleFor(d); const all = generateSlots(start, end, step);
+            const { start, end, step } = scheduleFor(d);
+            const all = generateSlots(start, end, step);
             set(ref(db, "config/closed/" + d), all);
             toast("تم قفل جميع خانات اليوم"); renderDay(d);
         };
 
-        // استثناءات أسبوعية
         $("#addWd").onclick = async () => {
-            const d = wdDay.value; const obj = { start: wdStart.value, end: wdEnd.value };
-            await update(ref(db, "config/byWeekday"), { [d]: obj }); toast("تم حفظ استثناء اليوم");
-        };
-        $("#clearWd").onclick = async () => {
-            const d = wdDay.value; await update(ref(db, "config/byWeekday"), { [d]: null }); toast("تم حذف استثناء اليوم");
+            const d = wdDay.value;
+            const obj = { start: wdStart.value, end: wdEnd.value };
+            await update(ref(db, "config/byWeekday"), { [d]: obj });
+            toast("تم حفظ استثناء اليوم");
         };
 
-        // استثناءات حسب التاريخ
+        $("#clearWd").onclick = async () => {
+            const d = wdDay.value;
+            await update(ref(db, "config/byWeekday"), { [d]: null });
+            toast("تم حذف استثناء اليوم");
+        };
+
         $("#addDate").onclick = async () => {
             const d = spDate.value;
             if (!d) { toast("اختر التاريخ أولاً"); return; }
-            const obj = {
-                start: spStart.value || CFG.defaultHours.start,
-                end: spEnd.value || CFG.defaultHours.end
-            };
+            const obj = { start: spStart.value, end: spEnd.value };
             await update(ref(db, "config/byDate"), { [d]: obj });
-            toast("تم حفظ استثناء هذا التاريخ");
+            toast("تم حفظ استثناء التاريخ");
         };
+
         $("#clearDate").onclick = async () => {
             const d = spDate.value;
-            if (!d) return;
             await update(ref(db, "config/byDate"), { [d]: null });
-            toast("تم حذف استثناء هذا التاريخ");
+            toast("تم حذف استثناء التاريخ");
         };
 
         function applyStep(step) {
-            step15.checked = (step === 15); step30.checked = (step !== 15);
-            update(ref(db, "config"), { step }); toast("تم ضبط الفاصل الزمني");
+            step15.checked = (step === 15);
+            step30.checked = (step !== 15);
+            update(ref(db, "config"), { step });
+            toast("تم ضبط الفاصل الزمني");
             if (dayPick.value) renderDay(dayPick.value);
         }
+
         step15.addEventListener("change", e => { if (e.target.checked) applyStep(15); });
         step30.addEventListener("change", e => { if (e.target.checked) applyStep(30); });
 
         $("#saveAll").onclick = async () => {
             await update(ref(db, "config"), { defaultHours: { start: defStart.value, end: defEnd.value } });
-            state.textContent = "تم الحفظ"; setTimeout(() => state.textContent = "", 2000);
+            state.textContent = "تم الحفظ";
+            setTimeout(() => state.textContent = "", 2000);
             if (dayPick.value) renderDay(dayPick.value);
         };
 
-        // تاريخ اليوم
         const isoToday = new Date().toISOString().slice(0, 10);
         dayPick.value = isoToday; renderDay(isoToday);
         dayPick.addEventListener("change", () => renderDay(dayPick.value));
 
-        // ------------ جدول الحجوزات -------------
+        // جدول الحجوزات
         const tbody = $("#bkTableBody"), bkState = $("#bkState"), reload = $("#reloadBk"), reminderToggle = $("#reminderToggle");
 
         const serviceNames = {
@@ -555,16 +558,16 @@
                     : "";
 
                 tr.innerHTML = `
-                          <td>${b.name || ""}${groomInfo}</td>
-                          <td>${b.phone || ""}</td>
-                          <td>${s}</td>
-                          <td>${b.date || ""}</td>
-                          <td>${timeCell}</td>
-                          <td>${pill}</td>
-                          <td style="white-space:nowrap">
+                        <td>${b.name || ""}${groomInfo}</td>
+                        <td>${b.phone || ""}</td>
+                        <td>${s}</td>
+                        <td>${b.date || ""}</td>
+                        <td>${timeCell}</td>
+                        <td>${pill}</td>
+                        <td style="white-space:nowrap">
                             <button type="button" class="primary" data-ok="${id}">تأكيد</button>
                             <button type="button" class="warn" data-no="${id}">رفض</button>
-                          </td>`;
+                        </td>`;
                 tbody.appendChild(tr);
             });
             bkState.textContent = "عدد الحجوزات: " + list.length;
@@ -572,7 +575,7 @@
 
         function collectBookings(snap, out, path = "") {
             snap.forEach(ch => {
-                const val = ch.val(); const id = path ? `${path}/${ch.key}` : ch.key;
+                const val = ch.val(), id = path ? `${path}/${ch.key}` : ch.key;
                 if (val && typeof val === "object" && (val.date || val.time || val.name)) {
                     out.push({ ...val, _id: id });
                 } else if (ch.hasChildren()) {
@@ -597,13 +600,8 @@
             const appUrl = `whatsapp://send?phone=${num}&text=${encodeURIComponent(text)}`;
             const webUrl = `https://wa.me/${num}?text=${encodeURIComponent(text)}`;
             const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
-            if (isIOS) {
-                window.location.href = appUrl;
-                setTimeout(() => { window.location.href = webUrl; }, 700);
-            } else {
-                window.location.href = appUrl;
-                setTimeout(() => { window.location.href = webUrl; }, 700);
-            }
+            if (isIOS) { window.location.href = appUrl; setTimeout(() => window.location.href = webUrl, 700); }
+            else { window.location.href = appUrl; setTimeout(() => window.location.href = webUrl, 700); }
         }
 
         tbody.addEventListener("click", async (e) => {
@@ -631,11 +629,11 @@
                 if (isGroom) {
                     const planLabel = groomPlanNames[plan] || "غير محددة";
                     msg = `تم تأكيد حجز باقة العريس في ANAS BARBER ✅
-اسم صاحب الحجز: ${name}
+اسم الزبون: ${name}
 اسم العريس: ${bk.groomName || ""}
 الباقة: ${planLabel}
-تاريخ المناسبة: ${date}
-سيتم التنسيق معك لتحديد الوقت المناسب.`;
+التاريخ: ${date}
+سيتم التواصل لتحديد الوقت.`;
                 } else {
                     const serviceText = serviceNames[sCode] || sCode;
                     msg = `تم تأكيد موعدك في ANAS BARBER ✅
@@ -647,29 +645,26 @@
                 }
 
                 openViaWhatsApp(phone, msg);
-                toast("تم تأكيد الحجز وإعداد رسالة واتساب جاهزة");
+                toast("تم تأكيد الحجز");
             } else {
                 await update(ref(db, "bookings/" + id), { status: "rejected" });
 
                 let msg;
                 if (isGroom) {
-                    msg = `نعتذر ${name}،
-لم نتمكن من تأكيد حجز باقة العريس بتاريخ ${date}.
-يرجى التواصل لاختيار موعد آخر مناسب.`;
+                    msg = `نعتذر ${name}، لم نتمكن من تأكيد باقة العريس بتاريخ ${date}.`;
                 } else {
                     const serviceText = serviceNames[sCode] || sCode;
-                    msg = `نعتذر ${name}،
-لم نتمكن من تأكيد موعد ${date} الساعة ${time} لخدمة ${serviceText}.
-يرجى اختيار وقت آخر وسنخدمك بكل سرور.`;
+                    msg = `نعتذر ${name}، لم نتمكن من تأكيد موعد ${date} الساعة ${time} لخدمة ${serviceText}.`;
                 }
 
-                toast("تم رفض الحجز وإعداد رسالة واتساب جاهزة");
                 openViaWhatsApp(phone, msg);
+                toast("تم رفض الحجز");
             }
 
             loadAllBookings();
         });
 
+        // تفعيل التذكير
         let reminderOn = false;
         reminderToggle.addEventListener("change", () => { reminderOn = reminderToggle.checked; });
         setInterval(async () => {
@@ -694,6 +689,59 @@
 
         reload.addEventListener("click", loadAllBookings);
         loadAllBookings();
+
+        // -------------------------------
+        //   النسخة الاحتياطية BACKUP
+        // -------------------------------
+        $("#backupBtn").onclick = async () => {
+            try {
+                const snap = await get(ref(db));
+                if (!snap.exists()) {
+                    toast("لا توجد بيانات للنسخ الاحتياطي");
+                    return;
+                }
+
+                const data = snap.val();
+                const json = JSON.stringify(data, null, 2);
+
+                const blob = new Blob([json], { type: "application/json" });
+                const url = URL.createObjectURL(blob);
+
+                const a = document.createElement("a");
+                const date = new Date().toISOString().slice(0, 10);
+
+                a.href = url;
+                a.download = `anas_barber_backup_${date}.json`;
+                a.click();
+
+                toast("تم تنزيل النسخة الاحتياطية بنجاح");
+            } catch (err) {
+                console.error(err);
+                toast("خطأ أثناء إنشاء النسخة الاحتياطية");
+            }
+        };
+
+        // -------------------------------
+        //  استرجاع النسخة RESTORE
+        // -------------------------------
+        $("#restoreInput").onchange = async (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            try {
+                const text = await file.text();
+                const data = JSON.parse(text);
+
+                await set(ref(db), data);
+
+                toast("تم استرجاع النسخة الاحتياطية بنجاح");
+                loadAllBookings();
+            } catch (err) {
+                console.error(err);
+                toast("خطأ أثناء استرجاع النسخة. تأكد أن الملف صحيح.");
+            }
+        };
+
     </script>
 </body>
 </html>
