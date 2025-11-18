@@ -463,7 +463,8 @@
             return n;
         }
 
-        let CFG = { step: 30, defaultHours: { start: "14:00", end: "01:00" }, byWeekday: {}, closed: {} };
+        // تمت إضافة byDate هنا مع الحفاظ على الباقي كما هو
+        let CFG = { step: 30, defaultHours: { start: "14:00", end: "01:00" }, byWeekday: {}, byDate: {}, closed: {} };
         let fillVersion = 0;
 
         onValue(ref(db, "config"), snap => {
@@ -489,7 +490,19 @@
             return slots;
         }
 
+        // scheduleFor الآن يقرأ أولاً استثناءات التاريخ (byDate) ثم استثناءات اليوم (byWeekday)
         function scheduleFor(dateStr) {
+            // 1) استثناء خاص لهذا التاريخ إن وجد
+            const dCfg = CFG.byDate?.[dateStr];
+            if (dCfg) {
+                return {
+                    start: dCfg.start || CFG.defaultHours.start,
+                    end: dCfg.end || CFG.defaultHours.end,
+                    step: CFG.step || 30
+                };
+            }
+
+            // 2) استثناء حسب يوم الأسبوع (السلوك القديم)
             const wd = new Date(dateStr).getDay();
             const w = CFG.byWeekday?.[wd];
             return {
@@ -721,4 +734,3 @@
     </script>
 </body>
 </html>
-```0

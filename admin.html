@@ -253,7 +253,7 @@
             <div class="muted">تُحفظ الإعدادات في <code>/config</code>.</div>
         </div>
 
-        <!-- استثناءات أسبوعية -->
+        <!-- استثناءات أسبوعية (كما هي) -->
         <div class="card">
             <h2>استثناءات حسب يوم الأسبوع</h2>
             <div class="grid2">
@@ -277,6 +277,30 @@
                 <button id="clearWd" class="warn" type="button">حذف هذا اليوم</button>
             </div>
             <div id="wdList" class="muted"></div>
+        </div>
+
+        <!-- استثناءات حسب التاريخ (جديد) -->
+        <div class="card">
+            <h2>استثناءات حسب التاريخ (مثلاً رمضان أو الأعياد)</h2>
+            <div class="grid2">
+                <label>
+                    <span>التاريخ</span>
+                    <input id="spDate" type="date">
+                </label>
+                <label>
+                    <span>من</span>
+                    <input id="spStart" type="time" value="21:00">
+                </label>
+                <label>
+                    <span>إلى</span>
+                    <input id="spEnd" type="time" value="02:00">
+                </label>
+            </div>
+            <div class="row">
+                <button id="addDate" class="primary" type="button">حفظ/تحديث هذا التاريخ</button>
+                <button id="clearDate" class="warn" type="button">حذف هذا التاريخ</button>
+            </div>
+            <div id="spList" class="muted"></div>
         </div>
 
         <!-- إدارة يوم محدد -->
@@ -328,18 +352,24 @@
         // عناصر الإعدادات
         const defStart = $("#defStart"), defEnd = $("#defEnd"), step15 = $("#step15"), step30 = $("#step30");
         const wdDay = $("#wdDay"), wdStart = $("#wdStart"), wdEnd = $("#wdEnd"), wdList = $("#wdList");
+        // عناصر استثناءات حسب التاريخ (جديد)
+        const spDate = $("#spDate"), spStart = $("#spStart"), spEnd = $("#spEnd"), spList = $("#spList");
         const dayPick = $("#dayPick"), slotGrid = $("#slotGrid"), countInfo = $("#countInfo");
         const state = $("#state");
 
-        let CFG = { step: 30, defaultHours: { start: "14:00", end: "01:00" }, byWeekday: {}, closed: {} };
+        // أضفنا byDate إلى CFG
+        let CFG = { step: 30, defaultHours: { start: "14:00", end: "01:00" }, byWeekday: {}, byDate: {}, closed: {} };
 
         onValue(ref(db, "config"), snap => {
             if (snap.exists()) CFG = { ...CFG, ...snap.val() };
+
             defStart.value = CFG.defaultHours?.start || "14:00";
             defEnd.value = CFG.defaultHours?.end || "01:00";
             step15.checked = (CFG.step === 15);
             step30.checked = (CFG.step !== 15);
+
             renderWDList();
+            renderDateList();
             if (dayPick.value) renderDay(dayPick.value);
         });
 
@@ -350,14 +380,41 @@
                 : "لا استثناءات أسبوعية";
         }
 
+        // عرض استثناءات حسب التاريخ
+        function renderDateList() {
+            const entries = Object.entries(CFG.byDate || {});
+            if (!entries.length) {
+                spList.textContent = "لا استثناءات حسب التاريخ";
+                return;
+            }
+            entries.sort(([d1], [d2]) => d1.localeCompare(d2));
+            spList.innerHTML = entries
+                .map(([d, v]) => `• ${d}: ${v.start}-${v.end}`)
+                .join("<br>");
+        }
+
         function pad(n) { return String(n).padStart(2, "0") }
         function toMin(t) { const [h, m] = t.split(":").map(Number); return h * 60 + m }
         function fromMin(m) { m = (m + 1440) % 1440; return `${pad(Math.floor(m / 60))}:${pad(m % 60)}` }
         function to12(t) { let [h, m] = t.split(":").map(Number); const s = h >= 12 ? "م" : "ص"; h = ((h + 11) % 12) + 1; return `${pad(h)}:${pad(m)} ${s}` }
 
+        // scheduleFor الآن يعطي أولوية لاستثناء حسب التاريخ، ثم استثناء اليوم، ثم الإعداد الافتراضي
         function scheduleFor(dateStr) {
-            const wd = new Date(dateStr).getDay(); const w = CFG.byWeekday?.[wd];
-            return { start: (w?.start || CFG.defaultHours.start), end: (w?.end || CFG.defaultHours.end), step: (CFG.step || 30) };
+            const dCfg = CFG.byDate?.[dateStr];
+            if (dCfg) {
+                return {
+                    start: dCfg.start || CFG.defaultHours.start,
+                    end: dCfg.end || CFG.defaultHours.end,
+                    step: CFG.step || 30
+                };
+            }
+            const wd = new Date(dateStr).getDay();
+            const w = CFG.byWeekday?.[wd];
+            return {
+                start: (w?.start || CFG.defaultHours.start),
+                end: (w?.end || CFG.defaultHours.end),
+                step: (CFG.step || 30)
+            };
         }
 
         function generateSlots(st, en, step) {
@@ -405,12 +462,31 @@
             toast("تم قفل جميع خانات اليوم"); renderDay(d);
         };
 
+        // استثناءات أسبوعية
         $("#addWd").onclick = async () => {
             const d = wdDay.value; const obj = { start: wdStart.value, end: wdEnd.value };
             await update(ref(db, "config/byWeekday"), { [d]: obj }); toast("تم حفظ استثناء اليوم");
         };
         $("#clearWd").onclick = async () => {
             const d = wdDay.value; await update(ref(db, "config/byWeekday"), { [d]: null }); toast("تم حذف استثناء اليوم");
+        };
+
+        // استثناءات حسب التاريخ
+        $("#addDate").onclick = async () => {
+            const d = spDate.value;
+            if (!d) { toast("اختر التاريخ أولاً"); return; }
+            const obj = {
+                start: spStart.value || CFG.defaultHours.start,
+                end: spEnd.value || CFG.defaultHours.end
+            };
+            await update(ref(db, "config/byDate"), { [d]: obj });
+            toast("تم حفظ استثناء هذا التاريخ");
+        };
+        $("#clearDate").onclick = async () => {
+            const d = spDate.value;
+            if (!d) return;
+            await update(ref(db, "config/byDate"), { [d]: null });
+            toast("تم حذف استثناء هذا التاريخ");
         };
 
         function applyStep(step) {
@@ -479,16 +555,16 @@
                     : "";
 
                 tr.innerHTML = `
-                      <td>${b.name || ""}${groomInfo}</td>
-                      <td>${b.phone || ""}</td>
-                      <td>${s}</td>
-                      <td>${b.date || ""}</td>
-                      <td>${timeCell}</td>
-                      <td>${pill}</td>
-                      <td style="white-space:nowrap">
-                        <button type="button" class="primary" data-ok="${id}">تأكيد</button>
-                        <button type="button" class="warn" data-no="${id}">رفض</button>
-                      </td>`;
+                          <td>${b.name || ""}${groomInfo}</td>
+                          <td>${b.phone || ""}</td>
+                          <td>${s}</td>
+                          <td>${b.date || ""}</td>
+                          <td>${timeCell}</td>
+                          <td>${pill}</td>
+                          <td style="white-space:nowrap">
+                            <button type="button" class="primary" data-ok="${id}">تأكيد</button>
+                            <button type="button" class="warn" data-no="${id}">رفض</button>
+                          </td>`;
                 tbody.appendChild(tr);
             });
             bkState.textContent = "عدد الحجوزات: " + list.length;
@@ -513,7 +589,6 @@
             renderBookings(future);
         }
 
-        // فتح واتساب
         function openViaWhatsApp(phone, text) {
             let num = String(phone || "").replace(/\D/g, "");
             if (!num) return;
@@ -531,7 +606,6 @@
             }
         }
 
-        // تأكيد / رفض مع تفرقة باقة العريس
         tbody.addEventListener("click", async (e) => {
             const btn = e.target.closest("button[data-ok], button[data-no]");
             if (!btn) return;
@@ -539,7 +613,6 @@
             const isOk = btn.hasAttribute("data-ok");
             const id = isOk ? btn.dataset.ok : btn.dataset.no;
 
-            // قراءة الحجز من قاعدة البيانات لنتأكد من بيانات باقة العريس
             const snap = await get(ref(db, "bookings/" + id));
             const bk = snap.exists() ? snap.val() : {};
             const isGroom = bk.service === "groom_package";
@@ -590,14 +663,13 @@
 يرجى اختيار وقت آخر وسنخدمك بكل سرور.`;
                 }
 
-                openViaWhatsApp(phone, msg);
                 toast("تم رفض الحجز وإعداد رسالة واتساب جاهزة");
+                openViaWhatsApp(phone, msg);
             }
 
             loadAllBookings();
         });
 
-        // تذكير داخلي قبل الموعد بساعة (يتجاهل باقة العريس لأنها بدون وقت)
         let reminderOn = false;
         reminderToggle.addEventListener("change", () => { reminderOn = reminderToggle.checked; });
         setInterval(async () => {
@@ -625,4 +697,3 @@
     </script>
 </body>
 </html>
-```0
