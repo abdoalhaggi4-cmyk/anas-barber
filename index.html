@@ -463,12 +463,21 @@
             return n;
         }
 
-        // تمت إضافة byDate هنا مع الحفاظ على الباقي كما هو
+        // إعدادات زمنية مع افتراضات آمنة
         let CFG = { step: 30, defaultHours: { start: "14:00", end: "01:00" }, byWeekday: {}, byDate: {}, closed: {} };
         let fillVersion = 0;
 
         onValue(ref(db, "config"), snap => {
             if (snap.exists()) CFG = { ...CFG, ...snap.val() };
+
+            // 🔒 تأمين defaultHours و step حتى لو config ناقص أو خربان
+            if (!CFG.defaultHours || typeof CFG.defaultHours !== "object") {
+                CFG.defaultHours = { start: "14:00", end: "01:00" };
+            }
+            if (!CFG.defaultHours.start) CFG.defaultHours.start = "14:00";
+            if (!CFG.defaultHours.end) CFG.defaultHours.end = "01:00";
+            if (!CFG.step || Number.isNaN(+CFG.step)) CFG.step = 30;
+
             configState.textContent = "تمت مزامنة الإعدادات.";
             fillTimeOptions(dateInput.value);
         });
@@ -490,25 +499,34 @@
             return slots;
         }
 
-        // scheduleFor الآن يقرأ أولاً استثناءات التاريخ (byDate) ثم استثناءات اليوم (byWeekday)
+        // 🔒 نسخة آمنة من scheduleFor تعتمد على fallback ثابت
         function scheduleFor(dateStr) {
+            const safeDefaults = (CFG.defaultHours && typeof CFG.defaultHours === "object")
+                ? CFG.defaultHours
+                : { start: "14:00", end: "01:00" };
+
+            const fallbackStart = safeDefaults.start || "14:00";
+            const fallbackEnd = safeDefaults.end || "01:00";
+            const step = CFG.step || 30;
+
             // 1) استثناء خاص لهذا التاريخ إن وجد
-            const dCfg = CFG.byDate?.[dateStr];
+            const dCfg = (CFG.byDate && CFG.byDate[dateStr]) || null;
             if (dCfg) {
                 return {
-                    start: dCfg.start || CFG.defaultHours.start,
-                    end: dCfg.end || CFG.defaultHours.end,
-                    step: CFG.step || 30
+                    start: dCfg.start || fallbackStart,
+                    end: dCfg.end || fallbackEnd,
+                    step
                 };
             }
 
-            // 2) استثناء حسب يوم الأسبوع (السلوك القديم)
+            // 2) استثناء حسب يوم الأسبوع
             const wd = new Date(dateStr).getDay();
-            const w = CFG.byWeekday?.[wd];
+            const wCfg = (CFG.byWeekday && CFG.byWeekday[wd]) || null;
+
             return {
-                start: (w?.start || CFG.defaultHours.start),
-                end: (w?.end || CFG.defaultHours.end),
-                step: (CFG.step || 30)
+                start: (wCfg && wCfg.start) || fallbackStart,
+                end: (wCfg && wCfg.end) || fallbackEnd,
+                step
             };
         }
 
