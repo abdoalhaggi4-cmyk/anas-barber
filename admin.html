@@ -403,8 +403,16 @@
         onValue(ref(db, "config"), snap => {
             if (snap.exists()) CFG = { ...CFG, ...snap.val() };
 
-            defStart.value = CFG.defaultHours?.start || "14:00";
-            defEnd.value = CFG.defaultHours?.end || "01:00";
+            // 🔒 تأمين defaultHours و step حتى لو config ناقص أو خربان
+            if (!CFG.defaultHours || typeof CFG.defaultHours !== "object") {
+                CFG.defaultHours = { start: "14:00", end: "01:00" };
+            }
+            if (!CFG.defaultHours.start) CFG.defaultHours.start = "14:00";
+            if (!CFG.defaultHours.end) CFG.defaultHours.end = "01:00";
+            if (!CFG.step || Number.isNaN(+CFG.step)) CFG.step = 30;
+
+            defStart.value = CFG.defaultHours.start;
+            defEnd.value = CFG.defaultHours.end;
             step15.checked = (CFG.step === 15);
             step30.checked = (CFG.step !== 15);
 
@@ -442,12 +450,35 @@
         function fromMin(m) { m = (m + 1440) % 1440; return `${pad(Math.floor(m / 60))}:${pad(m % 60)}` }
         function to12(t) { let [h, m] = t.split(":").map(Number); const s = h >= 12 ? "م" : "ص"; h = ((h + 11) % 12) + 1; return `${pad(h)}:${pad(m)} ${s}` }
 
+        // 🔒 نسخة آمنة من scheduleFor تعتمد على fallback ثابت
         function scheduleFor(dateStr) {
-            const dCfg = CFG.byDate?.[dateStr];
-            if (dCfg) return { start: dCfg.start || CFG.defaultHours.start, end: dCfg.end || CFG.defaultHours.end, step: CFG.step || 30 };
+            const safeDefaults = (CFG.defaultHours && typeof CFG.defaultHours === "object")
+                ? CFG.defaultHours
+                : { start: "14:00", end: "01:00" };
+
+            const fallbackStart = safeDefaults.start || "14:00";
+            const fallbackEnd = safeDefaults.end || "01:00";
+            const step = CFG.step || 30;
+
+            // استثناء حسب التاريخ
+            const dCfg = (CFG.byDate && CFG.byDate[dateStr]) || null;
+            if (dCfg) {
+                return {
+                    start: dCfg.start || fallbackStart,
+                    end: dCfg.end || fallbackEnd,
+                    step
+                };
+            }
+
+            // استثناء حسب يوم الأسبوع
             const wd = new Date(dateStr).getDay();
-            const w = CFG.byWeekday?.[wd];
-            return { start: w?.start || CFG.defaultHours.start, end: w?.end || CFG.defaultHours.end, step: CFG.step || 30 };
+            const wCfg = (CFG.byWeekday && CFG.byWeekday[wd]) || null;
+
+            return {
+                start: (wCfg && wCfg.start) || fallbackStart,
+                end: (wCfg && wCfg.end) || fallbackEnd,
+                step
+            };
         }
 
         function generateSlots(st, en, step) {
@@ -669,16 +700,16 @@
                     : "";
 
                 tr.innerHTML = `
-                            <td>${b.name || ""}${groomInfo}</td>
-                            <td>${b.phone || ""}</td>
-                            <td>${s}</td>
-                            <td>${b.date || ""}</td>
-                            <td>${timeCell}</td>
-                            <td>${pill}</td>
-                            <td style="white-space:nowrap">
-                                <button type="button" class="primary" data-ok="${id}">تأكيد</button>
-                                <button type="button" class="warn" data-no="${id}">رفض</button>
-                            </td>`;
+                                <td>${b.name || ""}${groomInfo}</td>
+                                <td>${b.phone || ""}</td>
+                                <td>${s}</td>
+                                <td>${b.date || ""}</td>
+                                <td>${timeCell}</td>
+                                <td>${pill}</td>
+                                <td style="white-space:nowrap">
+                                    <button type="button" class="primary" data-ok="${id}">تأكيد</button>
+                                    <button type="button" class="warn" data-no="${id}">رفض</button>
+                                </td>`;
                 tbody.appendChild(tr);
             });
             bkState.textContent = "عدد الحجوزات: " + list.length;
